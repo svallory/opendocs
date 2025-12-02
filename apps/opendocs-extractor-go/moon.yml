@@ -1,0 +1,22 @@
+type: 'application'
+language: 'go'
+
+# Go projects in Moon require proto/prototools configuration
+# This is a placeholder configuration
+tasks:
+  build:
+    command: 'go build -o bin/opendocs-extract-go ./cmd/opendocs-extract-go'
+    outputs:
+      - 'bin'
+
+  dev:
+    command: 'go run ./cmd/opendocs-extract-go'
+    local: true
+
+  test:
+    command: 'go test ./...'
+    inputs:
+      - '**/*.go'
+
+  fmt:
+    command: 'go fmt ./...'

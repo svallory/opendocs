@@ -1,0 +1,20 @@
+type: 'application'
+language: 'python'
+
+# Python projects in Moon require proto/prototools configuration
+# This is a placeholder configuration
+tasks:
+  build:
+    command: 'python -m build'
+    outputs:
+      - 'dist'
+
+  dev:
+    command: 'python -m opendocs_extractor.cli'
+    local: true
+
+  test:
+    command: 'pytest'
+    inputs:
+      - 'opendocs_extractor/**/*.py'
+      - 'tests/**/*.py'

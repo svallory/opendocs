@@ -1,0 +1,11 @@
+type: 'application'
+language: 'typescript'
+
+tasks:
+  build:
+    outputs:
+      - 'lib'
+
+  dev:
+    command: 'node lib/cli.js'
+    local: true
