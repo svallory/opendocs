@@ -9,14 +9,14 @@ This library provides Go types and constants for working with OpenDocs documenta
 ## Installation
 
 ```bash
-go get github.com/svallory/opendocs/libs/opendocs-model-go
+go get github.com/svallory/opendocs/libs/model/go
 ```
 
 ## Usage
 
 ```go
 import (
-    model "github.com/svallory/opendocs/libs/opendocs-model-go"
+    model "github.com/svallory/opendocs/libs/model/go"
     "encoding/json"
     "time"
 )

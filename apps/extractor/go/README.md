@@ -9,7 +9,7 @@ Extracts API documentation from Go source files and converts it to the [OpenDocs
 ## Installation
 
 ```bash
-go install github.com/svallory/opendocs/apps/opendocs-extractor-go/cmd/opendocs-extract-go@latest
+go install github.com/svallory/opendocs/apps/extractor/go/cmd/opendocs-extract-go@latest
 ```
 
 ## Usage
@@ -38,7 +38,7 @@ opendocs-extract-go extract \
 ```bash
 # Clone the repository
 git clone https://github.com/svallory/opendocs.git
-cd opendocs/apps/opendocs-extractor-go
+cd opendocs/apps/extractor/go
 
 # Build
 go build -o opendocs-extract-go ./cmd/opendocs-extract-go
