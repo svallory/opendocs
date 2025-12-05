@@ -1,0 +1,304 @@
+---
+title: Quick Start
+sidebarTitle: Quick Start
+description: Learn the OpenDocs model in 5 minutes with hands-on examples
+---
+
+## Your First OpenDocs File
+
+Here's the simplest possible `opendocs.json` - a Calculator class with one method:
+
+```json
+{
+  "id": "my-project",
+  "name": "My Project",
+  "format": "json",
+  "projects": [{
+    "id": "my-lib",
+    "name": "My Library",
+    "language": "typescript",
+    "items": [{
+      "id": "my-lib#Calculator",
+      "name": "Calculator",
+      "kind": "class",
+      "location": {
+        "path": "src/calculator.ts",
+        "number": 5,
+        "column": 1
+      },
+      "docBlock": {
+        "description": "Performs arithmetic calculations",
+        "tags": {
+          "since": ["1.0.0"]
+        }
+      },
+      "items": [{
+        "id": "my-lib#Calculator#add",
+        "name": "add",
+        "kind": "method",
+        "location": {
+          "path": "src/calculator.ts",
+          "number": 10,
+          "column": 3
+        },
+        "relations": {
+          "container": "my-lib#Calculator"
+        },
+        "docBlock": {
+          "description": "Adds two numbers",
+          "tags": {
+            "param": [
+              { "name": "param", "content": "First number", "parameters": { "name": "a", "type": "number" } },
+              { "name": "param", "content": "Second number", "parameters": { "name": "b", "type": "number" } }
+            ],
+            "returns": ["The sum of a and b"]
+          }
+        }
+      }]
+    }]
+  }]
+}
+```
+
+**Key concepts in this example:**
+- **DocSet** (`opendocs.json` root): Contains metadata and projects array
+- **Project**: Specifies language and contains top-level items
+- **DocItem**: Everything is a DocItem - the class, the method, even parameters
+- **Location**: Every item links to source code (file, line, column)
+- **Relationships**: The `add` method knows it's contained in `Calculator`
+- **Documentation**: DocBlock with description and tags
+
+## Language-Native IDs
+
+The `id` field uses each language's natural naming convention for fully qualified names. This makes cross-references intuitive and enables IDE integration:
+
+| Language | ID Format | Example |
+|----------|-----------|---------|
+| TypeScript/JavaScript | `package#export` or `package#Class#member` | `my-lib#Calculator#add` |
+| Rust | `crate::module::Type` | `serde::de::Deserialize` |
+| Go | `package.Type` or `package.Function` | `fmt.Printf` |
+| Python | `module.Class.method` | `mylib.Calculator.add` |
+| Java | `package.Class.method` | `com.example.Calculator.add` |
+
+**Why language-native?**
+- Developers recognize the format immediately
+- Copy-paste friendly for code references
+- Natural for each ecosystem's tooling
+- Consistent within each language
+
+**Constructing IDs for cross-references:**
+
+When a DocItem references another (via `relations` or `extends`), use the target's full ID:
+
+```json
+{
+  "id": "my-lib#MyClass",
+  "name": "MyClass",
+  "kind": "class",
+  "relations": {
+    "container": "my-lib#myModule",
+    "extends": "my-lib#BaseClass",
+    "implements": ["my-lib#IInterface1", "my-lib#IInterface2"]
+  }
+}
+```
+
+## Source Locations
+
+Every DocItem should include a `location` to link back to source code:
+
+```json
+{
+  "id": "my-lib#Calculator",
+  "name": "Calculator",
+  "kind": "class",
+  "location": {
+    "path": "src/calculator.ts",
+    "number": 15,
+    "column": 1
+  }
+}
+```
+
+**Path**: Relative to project root (enables repository-agnostic portability)
+**Number**: Line number where the item is defined (1-indexed)
+**Column**: Column number (1-indexed, optional for simple line-level links)
+
+### Linking to Source Code
+
+Add repository information at the Project level to generate source code URLs:
+
+```json
+{
+  "id": "my-lib",
+  "name": "My Library",
+  "language": "typescript",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/repo",
+    "fileUrlTemplate": "{repo}/blob/{hash}/{path}#L{line}"
+  }
+}
+```
+
+**Template variables:**
+- `{repo}`: Repository URL
+- `{hash}`: Git commit hash
+- `{path}`: File path from location
+- `{line}`: Line number from location
+
+With this template, the Calculator class at `src/calculator.ts:15` becomes:
+`https://github.com/user/repo/blob/abc123/src/calculator.ts#L15`
+
+## Relationships
+
+The `relations` field describes how DocItems connect to each other. It supports three formats for maximum flexibility:
+
+### 1. Simple String (Most Common)
+
+For straightforward relationships, just use the target ID:
+
+```json
+{
+  "id": "my-lib#Calculator#add",
+  "name": "add",
+  "relations": {
+    "container": "my-lib#Calculator"
+  }
+}
+```
+
+### 2. Relation Object (With Metadata)
+
+For complex relationships that need additional context:
+
+```json
+{
+  "id": "serde::MyStruct",
+  "name": "MyStruct",
+  "relations": {
+    "rust-trait-impl": {
+      "kind": "rust-trait-impl",
+      "target": "serde::Serialize",
+      "metadata": { "derived": true }
+    }
+  }
+}
+```
+
+### 3. Array of Relations
+
+When an item has multiple relationships of the same type:
+
+```json
+{
+  "id": "my-lib#MyClass",
+  "name": "MyClass",
+  "relations": {
+    "implements": [
+      "my-lib#IInterface1",
+      "my-lib#IInterface2"
+    ]
+  }
+}
+```
+
+**Common relationship types:**
+- `container`: Parent module, class, or namespace
+- `extends`: Class/interface inheritance
+- `implements`: Interface implementation
+- Language-specific: `rust-trait-impl`, `go-receiver-method`, `python-decorator`, etc.
+
+## Documentation Content
+
+DocBlock captures structured documentation from code comments:
+
+```json
+{
+  "docBlock": {
+    "description": "Calculates the area of a rectangle",
+    "tags": {
+      "param": [
+        {
+          "name": "param",
+          "content": "The width of the rectangle",
+          "parameters": { "name": "width", "type": "number" }
+        },
+        {
+          "name": "param",
+          "content": "The height of the rectangle",
+          "parameters": { "name": "height", "type": "number" }
+        }
+      ],
+      "returns": ["The calculated area"],
+      "since": ["1.0.0"],
+      "author": ["John Doe"]
+    }
+  }
+}
+```
+
+### Tags Format: `Record<string, (string | DocTag)[]>`
+
+Tags are organized by name, with each tag name mapping to an array of values:
+
+**Simple tags** (just strings):
+```json
+{
+  "tags": {
+    "since": ["1.0.0"],
+    "author": ["John Doe", "Jane Smith"]
+  }
+}
+```
+
+**Complex tags** (DocTag objects with parameters):
+```json
+{
+  "tags": {
+    "param": [
+      {
+        "name": "param",
+        "content": "The width of the rectangle",
+        "parameters": { "name": "width", "type": "number" }
+      }
+    ]
+  }
+}
+```
+
+**Why this format?**
+- Groups multiple tags of the same type (multiple `@param` tags)
+- Supports both simple metadata (version, author) and complex structures (parameters with types)
+- Easy to render - iterate over tag names, then iterate over values
+- Preserves order within each tag type
+
+### Cross-Format Normalization
+
+Different languages use different doc comment syntax, but all normalize to the same structure:
+
+| Format | Source | Normalized |
+|--------|--------|------------|
+| **TSDoc** | `@param width - The width` | `{ name: "param", content: "The width", parameters: { name: "width" } }` |
+| **Javadoc** | `@param width the width` | Same structure |
+| **Python** | `:param width: The width`<br/>`:type width: int` | Same structure with `type: "int"` in parameters |
+| **Rustdoc** | `* \`width\` - The width` | Same structure |
+
+This enables consistent rendering and cross-language documentation tools.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="See Real Examples" icon="code" href="/model/examples">
+    Explore actual extractor outputs from TypeScript, Go, and Python projects
+  </Card>
+  <Card title="Detailed Reference" icon="book" href="/model/reference">
+    Complete field-by-field specification for all six models
+  </Card>
+</CardGroup>
+
+**Building an integration?**
+- Use the examples to understand real-world output structures
+- Reference the specification when implementing parsers
+- Follow language-native ID conventions for cross-references
+- Include source locations for IDE integration

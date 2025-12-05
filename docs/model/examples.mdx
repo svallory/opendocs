@@ -1,0 +1,539 @@
+---
+title: Real Examples
+sidebarTitle: Examples
+description: Actual extractor outputs from TypeScript, Go, and Python sandboxes
+---
+
+## Introduction
+
+These are actual outputs from OpenDocs extractors running on real sandbox projects. Each example demonstrates how the same Calculator library is represented in different languages while following the same model structure.
+
+**What to notice:**
+- Same six-component structure across all languages
+- Language-native ID formats (`package#Symbol` vs `package.Type` vs `module.Class.method`)
+- Consistent DocBlock and tag structure
+- Language-specific metadata (signatures, visibility, type information)
+
+## TypeScript Example
+
+From `sandbox/typescript` extraction - a library with Calculator class, Config interface, and utility functions:
+
+<Accordion title="Calculator Class with Methods">
+```json
+{
+  "id": "test-library#Calculator",
+  "name": "Calculator",
+  "kind": "class",
+  "language": "typescript",
+  "location": {
+    "path": "index.ts",
+    "number": 4,
+    "column": 1
+  },
+  "relations": {
+    "container": "test-library"
+  },
+  "docBlock": {
+    "description": "A simple calculator class for testing"
+  },
+  "items": [
+    {
+      "id": "test-library#Calculator#add",
+      "name": "add",
+      "kind": "method",
+      "language": "typescript",
+      "location": {
+        "path": "index.ts",
+        "number": 11,
+        "column": 3
+      },
+      "relations": {
+        "container": "test-library#Calculator"
+      },
+      "docBlock": {
+        "description": "Add two numbers together",
+        "tags": {
+          "param": [
+            {
+              "name": "param",
+              "content": "- First number",
+              "parameters": { "name": "a" }
+            },
+            {
+              "name": "param",
+              "content": "- Second number",
+              "parameters": { "name": "b" }
+            }
+          ],
+          "returns": ["The sum of a and b"]
+        }
+      },
+      "metadata": {
+        "visibility": "public",
+        "isStatic": false,
+        "signature": {
+          "parameters": [
+            { "name": "a", "type": { "name": "number" }, "isOptional": false },
+            { "name": "b", "type": { "name": "number" }, "isOptional": false }
+          ],
+          "returnType": { "name": "number" }
+        }
+      }
+    }
+  ]
+}
+```
+</Accordion>
+
+<Accordion title="Interface with Properties">
+```json
+{
+  "id": "test-library#Config",
+  "name": "Config",
+  "kind": "interface",
+  "language": "typescript",
+  "location": {
+    "path": "index.ts",
+    "number": 34,
+    "column": 1
+  },
+  "relations": {
+    "container": "test-library"
+  },
+  "docBlock": {
+    "description": "Configuration options for the library"
+  },
+  "items": [
+    {
+      "id": "test-library#Config#debug",
+      "name": "debug",
+      "kind": "property",
+      "language": "typescript",
+      "location": {
+        "path": "index.ts",
+        "number": 38,
+        "column": 3
+      },
+      "relations": {
+        "container": "test-library#Config"
+      },
+      "docBlock": {
+        "description": "Enable debug mode"
+      },
+      "metadata": {
+        "type": { "name": "boolean" }
+      }
+    },
+    {
+      "id": "test-library#Config#maxRetries",
+      "name": "maxRetries",
+      "kind": "property",
+      "language": "typescript",
+      "location": {
+        "path": "index.ts",
+        "number": 43,
+        "column": 3
+      },
+      "relations": {
+        "container": "test-library#Config"
+      },
+      "docBlock": {
+        "description": "Maximum number of retries"
+      },
+      "metadata": {
+        "type": { "name": "number" }
+      }
+    }
+  ]
+}
+```
+</Accordion>
+
+<Accordion title="Enum with Members">
+```json
+{
+  "id": "test-library#LogLevel",
+  "name": "LogLevel",
+  "kind": "enum",
+  "language": "typescript",
+  "location": {
+    "path": "index.ts",
+    "number": 54,
+    "column": 1
+  },
+  "relations": {
+    "container": "test-library"
+  },
+  "docBlock": {
+    "description": "Log levels enumeration"
+  },
+  "items": [
+    {
+      "id": "test-library#LogLevel#DEBUG",
+      "name": "DEBUG",
+      "kind": "enumMember",
+      "language": "typescript",
+      "location": {
+        "path": "index.ts",
+        "number": 56,
+        "column": 3
+      },
+      "relations": {
+        "container": "test-library#LogLevel"
+      },
+      "docBlock": {
+        "description": "Debug level logging"
+      }
+    }
+  ]
+}
+```
+</Accordion>
+
+**TypeScript highlights:**
+- **ID format**: `package#Export` for top-level, `package#Class#member` for nested items
+- **Kinds**: `class`, `interface`, `method`, `property`, `enum`, `enumMember`, `typeAlias`, `function`
+- **Metadata**: Full signature with parameter types, `isOptional`, `isStatic`, `isReadonly`, `visibility`
+- **Tags**: TSDoc `@param` and `@returns` normalized to Record format
+
+## Go Example
+
+From `sandbox/go` extraction - same Calculator library in Go:
+
+<Accordion title="Struct with Receiver Methods">
+```json
+{
+  "id": "testlibrary.Calculator",
+  "name": "Calculator",
+  "kind": "struct",
+  "language": "go",
+  "location": {
+    "path": "calculator.go",
+    "number": 6,
+    "column": 1
+  },
+  "relations": {
+    "container": "testlibrary"
+  },
+  "docBlock": {
+    "description": "Calculator provides basic arithmetic operations"
+  },
+  "items": [
+    {
+      "id": "testlibrary.Calculator.Add",
+      "name": "Add",
+      "kind": "method",
+      "language": "go",
+      "location": {
+        "path": "calculator.go",
+        "number": 12,
+        "column": 1
+      },
+      "relations": {
+        "container": "testlibrary"
+      },
+      "docBlock": {
+        "description": "Add returns the sum of two numbers"
+      },
+      "visibility": "public",
+      "signature": {
+        "parameters": [
+          { "name": "a", "type": { "name": "float64" } },
+          { "name": "b", "type": { "name": "float64" } }
+        ],
+        "returnType": { "name": "float64" }
+      }
+    }
+  ]
+}
+```
+</Accordion>
+
+<Accordion title="Package-Level Function">
+```json
+{
+  "id": "testlibrary.Greet",
+  "name": "Greet",
+  "kind": "function",
+  "language": "go",
+  "location": {
+    "path": "calculator.go",
+    "number": 68,
+    "column": 1
+  },
+  "relations": {
+    "container": "testlibrary"
+  },
+  "docBlock": {
+    "description": "Greet returns a greeting message for the given name"
+  },
+  "visibility": "public",
+  "signature": {
+    "parameters": [
+      { "name": "name", "type": { "name": "string" } }
+    ],
+    "returnType": { "name": "string" }
+  }
+}
+```
+</Accordion>
+
+<Accordion title="Type Alias">
+```json
+{
+  "id": "testlibrary.LogLevel",
+  "name": "LogLevel",
+  "kind": "typeAlias",
+  "language": "go",
+  "location": {
+    "path": "calculator.go",
+    "number": 42,
+    "column": 1
+  },
+  "relations": {
+    "container": "testlibrary"
+  },
+  "docBlock": {
+    "description": "LogLevel represents logging levels"
+  }
+}
+```
+</Accordion>
+
+**Go highlights:**
+- **ID format**: `package.Type` for types, `package.Function` for functions, `package.Type.Method` for methods
+- **Kinds**: `struct`, `interface`, `method`, `function`, `typeAlias`
+- **Metadata**: Signature at top level (not nested in metadata object), visibility based on capitalization
+- **Relations**: Methods relate to package, not parent struct (Go's receiver methods are package-level)
+- **Documentation**: Go doc comments follow "Name does X" convention
+
+## Python Example
+
+From `sandbox/python` extraction - Calculator in Python with type hints:
+
+<Accordion title="Class with Constructor and Methods">
+```json
+{
+  "id": "calculator.Calculator",
+  "name": "Calculator",
+  "kind": "class",
+  "language": "python",
+  "location": {
+    "path": "calculator.py",
+    "number": 7,
+    "column": 1
+  },
+  "relations": {
+    "container": "calculator"
+  },
+  "docBlock": {
+    "description": "A simple calculator class for testing."
+  },
+  "items": [
+    {
+      "id": "calculator.Calculator.__init__",
+      "name": "__init__",
+      "kind": "constructor",
+      "language": "python",
+      "location": {
+        "path": "calculator.py",
+        "number": 13,
+        "column": 5
+      },
+      "relations": {
+        "container": "calculator.Calculator"
+      },
+      "metadata": {
+        "visibility": "private",
+        "signature": {
+          "parameters": [
+            { "name": "precision", "type": { "name": "int" } }
+          ]
+        }
+      },
+      "docBlock": {
+        "description": "Initialize the calculator.",
+        "tags": {
+          "param": [
+            {
+              "name": "param",
+              "content": "Number of decimal places for results",
+              "parameters": { "name": "precision" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "calculator.Calculator.add",
+      "name": "add",
+      "kind": "method",
+      "language": "python",
+      "location": {
+        "path": "calculator.py",
+        "number": 22,
+        "column": 5
+      },
+      "relations": {
+        "container": "calculator.Calculator"
+      },
+      "metadata": {
+        "visibility": "public",
+        "signature": {
+          "parameters": [
+            { "name": "a", "type": { "name": "float" } },
+            { "name": "b", "type": { "name": "float" } }
+          ],
+          "returnType": { "name": "float" }
+        }
+      },
+      "docBlock": {
+        "description": "Add two numbers together.",
+        "tags": {
+          "param": [
+            {
+              "name": "param",
+              "content": "First number",
+              "parameters": { "name": "a" }
+            },
+            {
+              "name": "param",
+              "content": "Second number",
+              "parameters": { "name": "b" }
+            }
+          ],
+          "returns": ["The sum of a and b"]
+        }
+      }
+    }
+  ]
+}
+```
+</Accordion>
+
+<Accordion title="Module-Level Function">
+```json
+{
+  "id": "calculator.greet",
+  "name": "greet",
+  "kind": "function",
+  "language": "python",
+  "location": {
+    "path": "calculator.py",
+    "number": 108,
+    "column": 1
+  },
+  "relations": {
+    "container": "calculator"
+  },
+  "metadata": {
+    "signature": {
+      "parameters": [
+        { "name": "name", "type": { "name": "str" } }
+      ],
+      "returnType": { "name": "str" }
+    }
+  },
+  "docBlock": {
+    "description": "Greet a user by name.",
+    "tags": {
+      "param": [
+        {
+          "name": "param",
+          "content": "Name of the person to greet",
+          "parameters": { "name": "name" }
+        }
+      ],
+      "returns": ["A greeting message"]
+    }
+  }
+}
+```
+</Accordion>
+
+**Python highlights:**
+- **ID format**: `module.Class.method` using Python's dot notation
+- **Kinds**: `class`, `constructor`, `method`, `function`
+- **Metadata**: Type hints extracted from annotations, visibility based on naming (`__init__` is private)
+- **Tags**: Google-style docstrings normalized to Record format
+- **Relations**: All items relate to containing module or class
+
+## Cross-Language Patterns
+
+Despite different syntax and conventions, all three languages share the same OpenDocs structure:
+
+### Common Structure
+```
+DocSet
+└── Project (with language specified)
+    └── Items (top-level: modules/packages)
+        ├── Calculator (class/struct)
+        │   ├── add (method)
+        │   ├── subtract (method)
+        │   └── multiply (method)
+        ├── Config (interface/struct/class)
+        ├── LogLevel (enum/typeAlias/class)
+        └── Functions (greet, formatCurrency)
+```
+
+### ID Conventions
+| Language | Container | Class | Method | Function |
+|----------|-----------|-------|--------|----------|
+| TypeScript | `test-library` | `test-library#Calculator` | `test-library#Calculator#add` | `test-library#greet` |
+| Go | `testlibrary` | `testlibrary.Calculator` | `testlibrary.Calculator.Add` | `testlibrary.Greet` |
+| Python | `calculator` | `calculator.Calculator` | `calculator.Calculator.add` | `calculator.greet` |
+
+### Common Relations
+All three use `"container"` to link items to their parent:
+- Methods relate to their class/struct
+- Top-level items relate to their package/module
+- This enables navigation up the hierarchy
+
+### Consistent Documentation
+All three normalize documentation to the same structure:
+```json
+{
+  "docBlock": {
+    "description": "Main description",
+    "tags": {
+      "param": [
+        { "name": "param", "content": "desc", "parameters": { "name": "paramName" } }
+      ],
+      "returns": ["Return value description"]
+    }
+  }
+}
+```
+
+### Language-Specific Metadata
+Each language includes relevant metadata in the `metadata` field:
+- **TypeScript**: `isStatic`, `isReadonly`, `isOptional`, full signature
+- **Go**: `visibility`, signature at top level
+- **Python**: `visibility` based on naming conventions, type hints from annotations
+
+## Using These Examples
+
+**For integrators:**
+- Use these as templates when building parsers
+- Notice how the same mental model applies across languages
+- Test your implementation against these known-good outputs
+
+**For extractor developers:**
+- Follow these patterns for new language extractors
+- Maintain consistency in DocBlock structure
+- Use language-native ID formats
+- Include source locations for all items
+
+**Full example files:**
+- [TypeScript Example](/docs/model/examples-ts.json)
+- [Go Example](/docs/model/examples-go.json)
+- [Python Example](/docs/model/examples-py.json)
+
+<CardGroup cols={2}>
+  <Card title="Quick Start Guide" icon="rocket" href="/model/quick-start">
+    Learn the model with minimal examples in 5 minutes
+  </Card>
+  <Card title="Complete Reference" icon="book" href="/model/reference">
+    Detailed field-by-field specification for all models
+  </Card>
+</CardGroup>

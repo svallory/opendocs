@@ -1,0 +1,500 @@
+{
+  "id": "typescript-example",
+  "name": "typescript-example",
+  "version": "0.1.0",
+  "format": "json",
+  "projects": [
+    {
+      "id": "typescript-example",
+      "name": "typescript-example",
+      "language": "typescript",
+      "version": "1.0.0",
+      "items": [
+        {
+          "id": "test-library#Calculator",
+          "name": "Calculator",
+          "kind": "class",
+          "language": "typescript",
+          "location": {
+            "path": "index.ts",
+            "number": 4,
+            "column": 1
+          },
+          "relations": {
+            "container": "test-library"
+          },
+          "docBlock": {
+            "description": "A simple calculator class for testing"
+          },
+          "items": [
+            {
+              "id": "test-library#Calculator#add",
+              "name": "add",
+              "kind": "method",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 11,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#Calculator"
+              },
+              "docBlock": {
+                "description": "Add two numbers together",
+                "tags": {
+                  "param": [
+                    {
+                      "name": "param",
+                      "content": "- First number",
+                      "parameters": {
+                        "name": "a"
+                      }
+                    },
+                    {
+                      "name": "param",
+                      "content": "- Second number",
+                      "parameters": {
+                        "name": "b"
+                      }
+                    }
+                  ],
+                  "returns": [
+                    "The sum of a and b"
+                  ]
+                }
+              },
+              "metadata": {
+                "visibility": "public",
+                "isStatic": false,
+                "signature": {
+                  "parameters": [
+                    {
+                      "name": "a",
+                      "type": {
+                        "name": "number"
+                      },
+                      "isOptional": false,
+                      "isRest": false
+                    },
+                    {
+                      "name": "b",
+                      "type": {
+                        "name": "number"
+                      },
+                      "isOptional": false,
+                      "isRest": false
+                    }
+                  ],
+                  "returnType": {
+                    "name": "number"
+                  }
+                }
+              }
+            },
+            {
+              "id": "test-library#Calculator#subtract",
+              "name": "subtract",
+              "kind": "method",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 21,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#Calculator"
+              },
+              "docBlock": {
+                "description": "Subtract b from a",
+                "tags": {
+                  "param": [
+                    {
+                      "name": "param",
+                      "content": "- Number to subtract from",
+                      "parameters": {
+                        "name": "a"
+                      }
+                    },
+                    {
+                      "name": "param",
+                      "content": "- Number to subtract",
+                      "parameters": {
+                        "name": "b"
+                      }
+                    }
+                  ],
+                  "returns": [
+                    "The difference"
+                  ]
+                }
+              },
+              "metadata": {
+                "visibility": "public",
+                "isStatic": false,
+                "signature": {
+                  "parameters": [
+                    {
+                      "name": "a",
+                      "type": {
+                        "name": "number"
+                      },
+                      "isOptional": false,
+                      "isRest": false
+                    },
+                    {
+                      "name": "b",
+                      "type": {
+                        "name": "number"
+                      },
+                      "isOptional": false,
+                      "isRest": false
+                    }
+                  ],
+                  "returnType": {
+                    "name": "number"
+                  }
+                }
+              }
+            },
+            {
+              "id": "test-library#Calculator#PI",
+              "name": "PI",
+              "kind": "property",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 28,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#Calculator"
+              },
+              "docBlock": {
+                "description": "PI constant"
+              },
+              "metadata": {
+                "visibility": "public",
+                "isStatic": true,
+                "isReadonly": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "test-library#Config",
+          "name": "Config",
+          "kind": "interface",
+          "language": "typescript",
+          "location": {
+            "path": "index.ts",
+            "number": 34,
+            "column": 1
+          },
+          "relations": {
+            "container": "test-library"
+          },
+          "docBlock": {
+            "description": "Configuration options for the library"
+          },
+          "items": [
+            {
+              "id": "test-library#Config#debug",
+              "name": "debug",
+              "kind": "property",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 38,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#Config"
+              },
+              "docBlock": {
+                "description": "Enable debug mode"
+              },
+              "metadata": {
+                "type": {
+                  "name": "boolean"
+                }
+              }
+            },
+            {
+              "id": "test-library#Config#maxRetries",
+              "name": "maxRetries",
+              "kind": "property",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 43,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#Config"
+              },
+              "docBlock": {
+                "description": "Maximum number of retries"
+              },
+              "metadata": {
+                "type": {
+                  "name": "number"
+                }
+              }
+            },
+            {
+              "id": "test-library#Config#timeout",
+              "name": "timeout",
+              "kind": "property",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 48,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#Config"
+              },
+              "docBlock": {
+                "description": "Timeout in milliseconds"
+              },
+              "metadata": {
+                "type": {
+                  "name": "number"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "test-library#LogLevel",
+          "name": "LogLevel",
+          "kind": "enum",
+          "language": "typescript",
+          "location": {
+            "path": "index.ts",
+            "number": 54,
+            "column": 1
+          },
+          "relations": {
+            "container": "test-library"
+          },
+          "docBlock": {
+            "description": "Log levels enumeration"
+          },
+          "items": [
+            {
+              "id": "test-library#LogLevel#DEBUG",
+              "name": "DEBUG",
+              "kind": "enumMember",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 56,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#LogLevel"
+              },
+              "docBlock": {
+                "description": "Debug level logging"
+              }
+            },
+            {
+              "id": "test-library#LogLevel#INFO",
+              "name": "INFO",
+              "kind": "enumMember",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 58,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#LogLevel"
+              },
+              "docBlock": {
+                "description": "Info level logging"
+              }
+            },
+            {
+              "id": "test-library#LogLevel#WARN",
+              "name": "WARN",
+              "kind": "enumMember",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 60,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#LogLevel"
+              },
+              "docBlock": {
+                "description": "Warning level logging"
+              }
+            },
+            {
+              "id": "test-library#LogLevel#ERROR",
+              "name": "ERROR",
+              "kind": "enumMember",
+              "language": "typescript",
+              "location": {
+                "path": "index.ts",
+                "number": 62,
+                "column": 3
+              },
+              "relations": {
+                "container": "test-library#LogLevel"
+              },
+              "docBlock": {
+                "description": "Error level logging"
+              }
+            }
+          ]
+        },
+        {
+          "id": "test-library#Result",
+          "name": "Result",
+          "kind": "typeAlias",
+          "language": "typescript",
+          "location": {
+            "path": "index.ts",
+            "number": 68,
+            "column": 1
+          },
+          "relations": {
+            "container": "test-library"
+          },
+          "docBlock": {
+            "description": "Result type for operations"
+          },
+          "metadata": {
+            "type": {
+              "name": "| { success: true; data: T }\n  | { success: false; error: string }"
+            }
+          }
+        },
+        {
+          "id": "test-library#greet",
+          "name": "greet",
+          "kind": "function",
+          "language": "typescript",
+          "location": {
+            "path": "index.ts",
+            "number": 77,
+            "column": 1
+          },
+          "relations": {
+            "container": "test-library"
+          },
+          "docBlock": {
+            "description": "Greet a user by name",
+            "tags": {
+              "param": [
+                {
+                  "name": "param",
+                  "content": "- Name of the person to greet",
+                  "parameters": {
+                    "name": "name"
+                  }
+                }
+              ],
+              "returns": [
+                "A greeting message"
+              ]
+            }
+          },
+          "metadata": {
+            "signature": {
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "name": "string"
+                  },
+                  "isOptional": false,
+                  "isRest": false
+                }
+              ],
+              "returnType": {
+                "name": "string"
+              }
+            }
+          }
+        },
+        {
+          "id": "test-library#formatCurrency",
+          "name": "formatCurrency",
+          "kind": "function",
+          "language": "typescript",
+          "location": {
+            "path": "index.ts",
+            "number": 87,
+            "column": 1
+          },
+          "relations": {
+            "container": "test-library"
+          },
+          "docBlock": {
+            "description": "Format a number as currency",
+            "tags": {
+              "param": [
+                {
+                  "name": "param",
+                  "content": "- The amount to format",
+                  "parameters": {
+                    "name": "amount"
+                  }
+                },
+                {
+                  "name": "param",
+                  "content": "- Currency code (default: USD)",
+                  "parameters": {
+                    "name": "currency"
+                  }
+                }
+              ],
+              "returns": [
+                "Formatted currency string"
+              ]
+            }
+          },
+          "metadata": {
+            "signature": {
+              "parameters": [
+                {
+                  "name": "amount",
+                  "type": {
+                    "name": "number"
+                  },
+                  "isOptional": false,
+                  "isRest": false
+                },
+                {
+                  "name": "currency",
+                  "type": {
+                    "name": "string"
+                  },
+                  "isOptional": false,
+                  "isRest": false
+                }
+              ],
+              "returnType": {
+                "name": "string"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "created": "2025-12-05T06:15:00.637Z",
+    "modified": "2025-12-05T06:15:00.644Z",
+    "generator": {
+      "name": "@opendocs/extractor-typescript",
+      "version": "0.2.0"
+    }
+  }
+}

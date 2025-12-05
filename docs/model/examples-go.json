@@ -1,0 +1,272 @@
+{
+  "id": "go-example",
+  "name": "go-example",
+  "version": "0.2.0",
+  "format": "json",
+  "projects": [
+    {
+      "id": "go-example",
+      "name": "go-example",
+      "language": "go",
+      "items": [
+        {
+          "id": "testlibrary.Calculator",
+          "name": "Calculator",
+          "kind": "struct",
+          "language": "go",
+          "location": {
+            "path": "calculator.go",
+            "number": 6,
+            "column": 1
+          },
+          "relations": {
+            "container": "testlibrary"
+          },
+          "docBlock": {
+            "description": "Calculator provides basic arithmetic operations"
+          },
+          "items": [
+            {
+              "id": "testlibrary.Calculator.Add",
+              "name": "Add",
+              "kind": "method",
+              "language": "go",
+              "location": {
+                "path": "calculator.go",
+                "number": 12,
+                "column": 1
+              },
+              "relations": {
+                "container": "testlibrary"
+              },
+              "docBlock": {
+                "description": "Add returns the sum of two numbers"
+              },
+              "visibility": "public",
+              "signature": {
+                "parameters": [
+                  {
+                    "name": "a",
+                    "type": {
+                      "name": "float64"
+                    }
+                  },
+                  {
+                    "name": "b",
+                    "type": {
+                      "name": "float64"
+                    }
+                  }
+                ],
+                "returnType": {
+                  "name": "float64"
+                }
+              }
+            },
+            {
+              "id": "testlibrary.Calculator.Multiply",
+              "name": "Multiply",
+              "kind": "method",
+              "language": "go",
+              "location": {
+                "path": "calculator.go",
+                "number": 22,
+                "column": 1
+              },
+              "relations": {
+                "container": "testlibrary"
+              },
+              "docBlock": {
+                "description": "Multiply returns the product of two numbers"
+              },
+              "visibility": "public",
+              "signature": {
+                "parameters": [
+                  {
+                    "name": "a",
+                    "type": {
+                      "name": "float64"
+                    }
+                  },
+                  {
+                    "name": "b",
+                    "type": {
+                      "name": "float64"
+                    }
+                  }
+                ],
+                "returnType": {
+                  "name": "float64"
+                }
+              }
+            },
+            {
+              "id": "testlibrary.Calculator.Subtract",
+              "name": "Subtract",
+              "kind": "method",
+              "language": "go",
+              "location": {
+                "path": "calculator.go",
+                "number": 17,
+                "column": 1
+              },
+              "relations": {
+                "container": "testlibrary"
+              },
+              "docBlock": {
+                "description": "Subtract returns the difference between two numbers"
+              },
+              "visibility": "public",
+              "signature": {
+                "parameters": [
+                  {
+                    "name": "a",
+                    "type": {
+                      "name": "float64"
+                    }
+                  },
+                  {
+                    "name": "b",
+                    "type": {
+                      "name": "float64"
+                    }
+                  }
+                ],
+                "returnType": {
+                  "name": "float64"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "testlibrary.Config",
+          "name": "Config",
+          "kind": "struct",
+          "language": "go",
+          "location": {
+            "path": "calculator.go",
+            "number": 30,
+            "column": 1
+          },
+          "relations": {
+            "container": "testlibrary"
+          },
+          "docBlock": {
+            "description": "Config holds configuration options for the library"
+          }
+        },
+        {
+          "id": "testlibrary.LogLevel",
+          "name": "LogLevel",
+          "kind": "typeAlias",
+          "language": "go",
+          "location": {
+            "path": "calculator.go",
+            "number": 42,
+            "column": 1
+          },
+          "relations": {
+            "container": "testlibrary"
+          },
+          "docBlock": {
+            "description": "LogLevel represents logging levels"
+          }
+        },
+        {
+          "id": "testlibrary.Result",
+          "name": "Result",
+          "kind": "struct",
+          "language": "go",
+          "location": {
+            "path": "calculator.go",
+            "number": 56,
+            "column": 1
+          },
+          "relations": {
+            "container": "testlibrary"
+          },
+          "docBlock": {
+            "description": "Result represents the result of an operation"
+          }
+        },
+        {
+          "id": "testlibrary.FormatCurrency",
+          "name": "FormatCurrency",
+          "kind": "function",
+          "language": "go",
+          "location": {
+            "path": "calculator.go",
+            "number": 73,
+            "column": 1
+          },
+          "relations": {
+            "container": "testlibrary"
+          },
+          "docBlock": {
+            "description": "FormatCurrency formats an amount as currency"
+          },
+          "visibility": "public",
+          "signature": {
+            "parameters": [
+              {
+                "name": "amount",
+                "type": {
+                  "name": "float64"
+                }
+              },
+              {
+                "name": "currency",
+                "type": {
+                  "name": "string"
+                }
+              }
+            ],
+            "returnType": {
+              "name": "string"
+            }
+          }
+        },
+        {
+          "id": "testlibrary.Greet",
+          "name": "Greet",
+          "kind": "function",
+          "language": "go",
+          "location": {
+            "path": "calculator.go",
+            "number": 68,
+            "column": 1
+          },
+          "relations": {
+            "container": "testlibrary"
+          },
+          "docBlock": {
+            "description": "Greet returns a greeting message for the given name"
+          },
+          "visibility": "public",
+          "signature": {
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "name": "string"
+                }
+              }
+            ],
+            "returnType": {
+              "name": "string"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "created": "2025-12-05T03:14:33-03:00",
+    "modified": "2025-12-05T03:14:33-03:00",
+    "generator": {
+      "name": "opendocs-extractor-go",
+      "version": "0.2.0"
+    }
+  }
+}

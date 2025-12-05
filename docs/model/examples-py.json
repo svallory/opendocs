@@ -1,0 +1,473 @@
+{
+  "id": "python-example",
+  "name": "python-example",
+  "version": "0.2.0",
+  "format": "json",
+  "projects": [
+    {
+      "id": "python-example",
+      "name": "python-example",
+      "language": "python",
+      "version": null,
+      "items": [
+        {
+          "id": "calculator.Calculator",
+          "name": "Calculator",
+          "kind": "class",
+          "language": "python",
+          "location": {
+            "path": "calculator.py",
+            "number": 7,
+            "column": 1
+          },
+          "relations": {
+            "container": "calculator"
+          },
+          "items": [
+            {
+              "id": "calculator.Calculator.__init__",
+              "name": "__init__",
+              "kind": "constructor",
+              "language": "python",
+              "location": {
+                "path": "calculator.py",
+                "number": 13,
+                "column": 5
+              },
+              "relations": {
+                "container": "calculator.Calculator"
+              },
+              "metadata": {
+                "visibility": "private",
+                "signature": {
+                  "parameters": [
+                    {
+                      "name": "precision",
+                      "type": {
+                        "name": "int"
+                      }
+                    }
+                  ]
+                }
+              },
+              "docBlock": {
+                "description": "Initialize the calculator.",
+                "tags": {
+                  "param": [
+                    {
+                      "name": "param",
+                      "content": "Number of decimal places for results",
+                      "parameters": {
+                        "name": "precision"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "id": "calculator.Calculator.add",
+              "name": "add",
+              "kind": "method",
+              "language": "python",
+              "location": {
+                "path": "calculator.py",
+                "number": 22,
+                "column": 5
+              },
+              "relations": {
+                "container": "calculator.Calculator"
+              },
+              "metadata": {
+                "visibility": "public",
+                "signature": {
+                  "parameters": [
+                    {
+                      "name": "a",
+                      "type": {
+                        "name": "float"
+                      }
+                    },
+                    {
+                      "name": "b",
+                      "type": {
+                        "name": "float"
+                      }
+                    }
+                  ],
+                  "returnType": {
+                    "name": "float"
+                  }
+                }
+              },
+              "docBlock": {
+                "description": "Add two numbers together.",
+                "tags": {
+                  "param": [
+                    {
+                      "name": "param",
+                      "content": "First number",
+                      "parameters": {
+                        "name": "a"
+                      }
+                    },
+                    {
+                      "name": "param",
+                      "content": "Second number",
+                      "parameters": {
+                        "name": "b"
+                      }
+                    }
+                  ],
+                  "returns": [
+                    "The sum of a and b"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "calculator.Calculator.subtract",
+              "name": "subtract",
+              "kind": "method",
+              "language": "python",
+              "location": {
+                "path": "calculator.py",
+                "number": 35,
+                "column": 5
+              },
+              "relations": {
+                "container": "calculator.Calculator"
+              },
+              "metadata": {
+                "visibility": "public",
+                "signature": {
+                  "parameters": [
+                    {
+                      "name": "a",
+                      "type": {
+                        "name": "float"
+                      }
+                    },
+                    {
+                      "name": "b",
+                      "type": {
+                        "name": "float"
+                      }
+                    }
+                  ],
+                  "returnType": {
+                    "name": "float"
+                  }
+                }
+              },
+              "docBlock": {
+                "description": "Subtract b from a.",
+                "tags": {
+                  "param": [
+                    {
+                      "name": "param",
+                      "content": "Number to subtract from",
+                      "parameters": {
+                        "name": "a"
+                      }
+                    },
+                    {
+                      "name": "param",
+                      "content": "Number to subtract",
+                      "parameters": {
+                        "name": "b"
+                      }
+                    }
+                  ],
+                  "returns": [
+                    "The difference"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "calculator.Calculator.multiply",
+              "name": "multiply",
+              "kind": "method",
+              "language": "python",
+              "location": {
+                "path": "calculator.py",
+                "number": 49,
+                "column": 5
+              },
+              "relations": {
+                "container": "calculator.Calculator"
+              },
+              "metadata": {
+                "visibility": "public",
+                "signature": {
+                  "parameters": [
+                    {
+                      "name": "a",
+                      "type": {
+                        "name": "float"
+                      }
+                    },
+                    {
+                      "name": "b",
+                      "type": {
+                        "name": "float"
+                      }
+                    }
+                  ],
+                  "returnType": {
+                    "name": "float"
+                  }
+                }
+              },
+              "docBlock": {
+                "description": "Multiply two numbers.",
+                "tags": {
+                  "param": [
+                    {
+                      "name": "param",
+                      "content": "First number",
+                      "parameters": {
+                        "name": "a"
+                      }
+                    },
+                    {
+                      "name": "param",
+                      "content": "Second number",
+                      "parameters": {
+                        "name": "b"
+                      }
+                    }
+                  ],
+                  "returns": [
+                    "The product"
+                  ]
+                }
+              }
+            }
+          ],
+          "docBlock": {
+            "description": "A simple calculator class for testing."
+          }
+        },
+        {
+          "id": "calculator.Config",
+          "name": "Config",
+          "kind": "class",
+          "language": "python",
+          "location": {
+            "path": "calculator.py",
+            "number": 63,
+            "column": 1
+          },
+          "relations": {
+            "container": "calculator"
+          },
+          "items": [
+            {
+              "id": "calculator.Config.__init__",
+              "name": "__init__",
+              "kind": "constructor",
+              "language": "python",
+              "location": {
+                "path": "calculator.py",
+                "number": 66,
+                "column": 5
+              },
+              "relations": {
+                "container": "calculator.Config"
+              },
+              "metadata": {
+                "visibility": "private",
+                "signature": {
+                  "parameters": [
+                    {
+                      "name": "debug",
+                      "type": {
+                        "name": "bool"
+                      }
+                    },
+                    {
+                      "name": "timeout",
+                      "type": {
+                        "name": "int"
+                      }
+                    },
+                    {
+                      "name": "max_retries",
+                      "type": {
+                        "name": "Optional[int]"
+                      }
+                    }
+                  ]
+                }
+              },
+              "docBlock": {
+                "description": "Initialize configuration.",
+                "tags": {
+                  "param": [
+                    {
+                      "name": "param",
+                      "content": "Enable debug mode",
+                      "parameters": {
+                        "name": "debug"
+                      }
+                    },
+                    {
+                      "name": "param",
+                      "content": "Timeout in milliseconds",
+                      "parameters": {
+                        "name": "timeout"
+                      }
+                    },
+                    {
+                      "name": "param",
+                      "content": "Maximum number of retries (optional)",
+                      "parameters": {
+                        "name": "max_retries"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "docBlock": {
+            "description": "Configuration options for the library."
+          }
+        },
+        {
+          "id": "calculator.LogLevel",
+          "name": "LogLevel",
+          "kind": "class",
+          "language": "python",
+          "location": {
+            "path": "calculator.py",
+            "number": 85,
+            "column": 1
+          },
+          "relations": {
+            "container": "calculator"
+          },
+          "items": [],
+          "docBlock": {
+            "description": "Log levels enumeration."
+          }
+        },
+        {
+          "id": "calculator.greet",
+          "name": "greet",
+          "kind": "function",
+          "language": "python",
+          "location": {
+            "path": "calculator.py",
+            "number": 108,
+            "column": 1
+          },
+          "relations": {
+            "container": "calculator"
+          },
+          "metadata": {
+            "signature": {
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "name": "str"
+                  }
+                }
+              ],
+              "returnType": {
+                "name": "str"
+              }
+            }
+          },
+          "docBlock": {
+            "description": "Greet a user by name.",
+            "tags": {
+              "param": [
+                {
+                  "name": "param",
+                  "content": "Name of the person to greet",
+                  "parameters": {
+                    "name": "name"
+                  }
+                }
+              ],
+              "returns": [
+                "A greeting message"
+              ]
+            }
+          }
+        },
+        {
+          "id": "calculator.format_currency",
+          "name": "format_currency",
+          "kind": "function",
+          "language": "python",
+          "location": {
+            "path": "calculator.py",
+            "number": 121,
+            "column": 1
+          },
+          "relations": {
+            "container": "calculator"
+          },
+          "metadata": {
+            "signature": {
+              "parameters": [
+                {
+                  "name": "amount",
+                  "type": {
+                    "name": "float"
+                  }
+                },
+                {
+                  "name": "currency",
+                  "type": {
+                    "name": "str"
+                  }
+                }
+              ],
+              "returnType": {
+                "name": "str"
+              }
+            }
+          },
+          "docBlock": {
+            "description": "Format a number as currency.",
+            "tags": {
+              "param": [
+                {
+                  "name": "param",
+                  "content": "The amount to format",
+                  "parameters": {
+                    "name": "amount"
+                  }
+                },
+                {
+                  "name": "param",
+                  "content": "Currency code (default: USD)",
+                  "parameters": {
+                    "name": "currency"
+                  }
+                }
+              ],
+              "returns": [
+                "Formatted currency string"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "created": "2025-12-05T03:14:34.835205",
+    "modified": "2025-12-05T03:14:34.835224",
+    "generator": {
+      "name": "opendocs-extractor-python",
+      "version": "0.2.0"
+    }
+  }
+}
