@@ -5,7 +5,7 @@
 package model
 
 // Version is the OpenDocs specification version this library implements
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 // DocSet represents the root OpenDocs structure (opendocs.json file).
 // It contains metadata about the documentation and references to all projects.
@@ -59,16 +59,18 @@ type Generator struct {
 	Version string `json:"version"`
 }
 
-// Repository contains repository information
+// Repository contains source repository information for linking to source code
 type Repository struct {
-	// Type of repository (e.g., "git")
+	// Type of repository (e.g., "git", "svn", "mercurial")
 	Type string `json:"type"`
 
 	// URL of the repository
 	URL string `json:"url"`
 
-	// Directory within the repository
-	Directory string `json:"directory,omitempty"`
+	// FileURLTemplate is a template for generating file URLs
+	// Supported placeholders: {repo}, {hash}, {path}, {line}
+	// Example: "{repo}/blob/{hash}/{path}#L{line}"
+	FileURLTemplate string `json:"fileUrlTemplate,omitempty"`
 }
 
 // Project represents an individual project within a Documentation Set.
@@ -89,6 +91,9 @@ type Project struct {
 	// Version is the project version
 	Version string `json:"version,omitempty"`
 
+	// Repository contains source repository information
+	Repository *Repository `json:"repository,omitempty"`
+
 	// Items contains top-level documentation items
 	Items []DocItem `json:"items,omitempty"`
 
@@ -105,7 +110,8 @@ type Project struct {
 // DocItem represents the universal documentation item.
 // Every documentable code element is represented as a DocItem.
 type DocItem struct {
-	// ID is the unique identifier within the project
+	// ID is the language-native fully qualified name
+	// Examples: package#Symbol (TypeScript), crate::Type (Rust), package.Function (Go)
 	ID string `json:"id"`
 
 	// Name is the display name
@@ -114,17 +120,20 @@ type DocItem struct {
 	// Kind is the type of item (e.g., "class", "function", "method")
 	Kind string `json:"kind"`
 
-	// Container is a reference to the parent container
-	Container *ContainerRef `json:"container,omitempty"`
+	// Language is the source language
+	Language string `json:"language"`
+
+	// Location contains source code location
+	Location *Location `json:"location,omitempty"`
+
+	// Relations contains code relationships (container, extends, implements, etc.)
+	Relations Relations `json:"relations,omitempty"`
 
 	// DocBlock contains documentation content
 	DocBlock *DocBlock `json:"docBlock,omitempty"`
 
 	// Items contains child items
 	Items []DocItem `json:"items,omitempty"`
-
-	// Location contains source location information
-	Location *Location `json:"location,omitempty"`
 
 	// Visibility is the access level (public, private, protected, internal)
 	Visibility string `json:"visibility,omitempty"`
@@ -151,17 +160,21 @@ type DocItem struct {
 	Ref string `json:"$ref,omitempty"`
 }
 
-// ContainerRef references a parent container (Project or DocItem)
-type ContainerRef struct {
-	// Type is either "project" or "item"
-	Type string `json:"type"`
+// Relation represents a typed relationship between DocItems
+type Relation struct {
+	// Kind is the relationship type (container, extends, implements, etc.)
+	Kind string `json:"kind"`
 
-	// ID is the unique identifier of the container
-	ID string `json:"id"`
+	// Target is the target DocItem ID (language-native FQN)
+	Target string `json:"target"`
 
-	// Ref is an optional JSON $ref to the container's location
-	Ref string `json:"$ref,omitempty"`
+	// Metadata contains relationship-specific metadata
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
+
+// Relations is a map of relationship kinds to their targets
+// Values can be: string (simple reference), Relation (complex), or []interface{} (multiple)
+type Relations map[string]interface{}
 
 // DocBlock represents structured documentation content
 type DocBlock struct {
@@ -171,8 +184,10 @@ type DocBlock struct {
 	// Remarks contains extended remarks or detailed description
 	Remarks string `json:"remarks,omitempty"`
 
-	// Tags contains documentation tags
-	Tags []DocTag `json:"tags,omitempty"`
+	// Tags contains documentation tags organized by tag name
+	// Format: Record<string, (string | DocTag)[]>
+	// Each key is a tag name, value is an array of either strings or DocTag objects
+	Tags map[string][]interface{} `json:"tags,omitempty"`
 
 	// Examples contains code examples
 	Examples []string `json:"examples,omitempty"`
@@ -217,15 +232,15 @@ type Deprecated struct {
 	Alternative string `json:"alternative,omitempty"`
 }
 
-// Location represents source location
+// Location represents source code location
 type Location struct {
-	// File is the source file path
-	File string `json:"file"`
+	// Path is the file path (relative to project root)
+	Path string `json:"path"`
 
-	// Line is the line number
-	Line int `json:"line,omitempty"`
+	// Number is the line number (1-indexed)
+	Number int `json:"number"`
 
-	// Column is the column number
+	// Column is the column number (1-indexed)
 	Column int `json:"column,omitempty"`
 }
 
@@ -367,4 +382,32 @@ const (
 	LangCSharp     = "csharp"
 	LangCPP        = "cpp"
 	LangC          = "c"
+)
+
+// Common relationship kinds
+const (
+	// Universal relationships
+	RelationContainer  = "container"
+	RelationExtends    = "extends"
+	RelationImplements = "implements"
+
+	// TypeScript/JavaScript
+	RelationTSExtends    = "ts-extends"
+	RelationTSImplements = "ts-implements"
+
+	// Rust
+	RelationRustTraitImpl   = "rust-trait-impl"
+	RelationRustSupertrait  = "rust-supertrait"
+
+	// Go
+	RelationGoReceiver = "go-receiver"
+	RelationGoEmbed    = "go-embed"
+
+	// Python
+	RelationPythonDecorator = "python-decorator"
+	RelationPythonMetaclass = "python-metaclass"
+
+	// Java/C#
+	RelationJavaAnnotation   = "java-annotation"
+	RelationJavaGenericBound = "java-generic-bound"
 )

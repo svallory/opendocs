@@ -18,9 +18,24 @@ export interface DocBlock {
   remarks?: string;
 
   /**
-   * Array of documentation tags (@param, @returns, @deprecated, etc.)
+   * Documentation tags organized by tag name
+   *
+   * Per the OpenDocs specification, tags use the format Record<string, (string | DocTag)[]>
+   * where each tag name maps to an array of values (either simple strings or DocTag objects).
+   *
+   * Example:
+   * ```json
+   * {
+   *   "tags": {
+   *     "param": [
+   *       { "name": "param", "content": "First number", "parameters": { "name": "a" } }
+   *     ],
+   *     "returns": ["The sum of the numbers"]
+   *   }
+   * }
+   * ```
    */
-  tags?: DocTag[];
+  tags?: Record<string, (string | DocTag)[]>;
 
   /**
    * Code examples demonstrating usage
@@ -63,24 +78,17 @@ export interface DocBlock {
  */
 export class DocBlockUtils {
   /**
-   * Find a tag by name in a DocBlock
+   * Get tags by name from a DocBlock
    */
-  static findTag(docBlock: DocBlock, tagName: string): DocTag | undefined {
-    return docBlock.tags?.find(tag => tag.tag === tagName);
-  }
-
-  /**
-   * Find all tags with a specific name
-   */
-  static findTags(docBlock: DocBlock, tagName: string): DocTag[] {
-    return docBlock.tags?.filter(tag => tag.tag === tagName) ?? [];
+  static getTags(docBlock: DocBlock, tagName: string): (string | DocTag)[] {
+    return docBlock.tags?.[tagName] ?? [];
   }
 
   /**
    * Check if a DocBlock has a specific tag
    */
   static hasTag(docBlock: DocBlock, tagName: string): boolean {
-    return docBlock.tags?.some(tag => tag.tag === tagName) ?? false;
+    return docBlock.tags?.[tagName] !== undefined;
   }
 
   /**
@@ -93,14 +101,14 @@ export class DocBlockUtils {
   /**
    * Get all parameter tags
    */
-  static getParamTags(docBlock: DocBlock): DocTag[] {
-    return this.findTags(docBlock, 'param');
+  static getParamTags(docBlock: DocBlock): (string | DocTag)[] {
+    return this.getTags(docBlock, 'param');
   }
 
   /**
-   * Get the returns tag
+   * Get the returns tag values
    */
-  static getReturnsTag(docBlock: DocBlock): DocTag | undefined {
-    return this.findTag(docBlock, 'returns');
+  static getReturnsTags(docBlock: DocBlock): (string | DocTag)[] {
+    return this.getTags(docBlock, 'returns');
   }
 }

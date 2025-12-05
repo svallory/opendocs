@@ -11,11 +11,14 @@ import (
 )
 
 var (
-	sourcePath     string
-	outputPath     string
-	projectName    string
-	projectID      string
-	projectVersion string
+	sourcePath      string
+	outputPath      string
+	projectName     string
+	projectID       string
+	projectVersion  string
+	repoURL         string
+	repoType        string
+	fileURLTemplate string
 )
 
 var rootCmd = &cobra.Command{
@@ -33,10 +36,13 @@ var extractCmd = &cobra.Command{
 
 		// Extract documentation
 		docSet, err := extractor.ExtractDocumentation(extractor.Options{
-			SourcePath:     sourcePath,
-			ProjectName:    projectName,
-			ProjectID:      projectID,
-			ProjectVersion: projectVersion,
+			SourcePath:      sourcePath,
+			ProjectName:     projectName,
+			ProjectID:       projectID,
+			ProjectVersion:  projectVersion,
+			RepoURL:         repoURL,
+			RepoType:        repoType,
+			FileURLTemplate: fileURLTemplate,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to extract documentation: %w", err)
@@ -76,6 +82,9 @@ func init() {
 	extractCmd.Flags().StringVar(&projectName, "project-name", "", "Project name")
 	extractCmd.Flags().StringVar(&projectID, "project-id", "", "Project ID")
 	extractCmd.Flags().StringVar(&projectVersion, "project-version", "", "Project version")
+	extractCmd.Flags().StringVar(&repoURL, "repo-url", "", "Repository URL")
+	extractCmd.Flags().StringVar(&repoType, "repo-type", "git", "Repository type")
+	extractCmd.Flags().StringVar(&fileURLTemplate, "file-url-template", "", "File URL template")
 
 	rootCmd.AddCommand(extractCmd)
 }

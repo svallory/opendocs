@@ -1,6 +1,36 @@
 import { DocItem } from './DocItem';
 
 /**
+ * Source repository information
+ *
+ * Links documentation to source code with customizable URL templates
+ */
+export interface Repository {
+  /**
+   * Repository type (git, svn, mercurial, etc.)
+   */
+  type: string;
+
+  /**
+   * Repository URL
+   */
+  url: string;
+
+  /**
+   * Template for generating file URLs
+   *
+   * Supported placeholders:
+   * - {repo} - Repository URL
+   * - {hash} - Commit hash
+   * - {path} - File path
+   * - {line} - Line number
+   *
+   * Example: "{repo}/blob/{hash}/{path}#L{line}"
+   */
+  fileUrlTemplate?: string;
+}
+
+/**
  * Represents an individual project within a Documentation Set
  *
  * In monorepos, each package, library, or app is a separate Project.
@@ -32,6 +62,11 @@ export interface Project {
    * Project version
    */
   version?: string;
+
+  /**
+   * Source repository information for linking to source code
+   */
+  repository?: Repository;
 
   /**
    * Top-level documentation items (modules, namespaces, packages)

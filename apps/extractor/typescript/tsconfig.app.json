@@ -10,7 +10,7 @@
   ],
   "references": [
     {
-      "path": "../../../libs/model/typescript"
+      "path": "../../../libs/model/typescript/tsconfig.lib.json"
     }
   ]
 }

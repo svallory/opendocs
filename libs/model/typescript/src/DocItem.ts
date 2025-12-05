@@ -1,5 +1,5 @@
 import { DocBlock } from './DocBlock';
-import { ContainerRef } from './ContainerRef';
+import { Relations } from './Relation';
 
 /**
  * Universal documentation item - the fundamental unit of OpenDocs
@@ -9,9 +9,36 @@ import { ContainerRef } from './ContainerRef';
  *
  * The `kind` field provides language-specific typing while maintaining the universal model.
  */
+/**
+ * Source code location
+ */
+export interface Location {
+  /**
+   * File path (relative to project root)
+   */
+  path: string;
+
+  /**
+   * Line number (1-indexed)
+   */
+  number: number;
+
+  /**
+   * Column number (1-indexed)
+   */
+  column?: number;
+}
+
 export interface DocItem {
   /**
-   * Unique identifier within the project
+   * Language-native fully qualified name
+   *
+   * Uses each language's natural naming convention:
+   * - TypeScript: package#Symbol or package#Class#member
+   * - Rust: crate::module::Type
+   * - Go: package.Function or package.Type
+   * - Python: module.Class.method
+   * - Java: package.Class.method
    */
   id: string;
 
@@ -27,9 +54,19 @@ export interface DocItem {
   kind: string;
 
   /**
-   * Reference to the parent container (project or parent item)
+   * Source language
    */
-  container?: ContainerRef;
+  language: string;
+
+  /**
+   * Source code location
+   */
+  location?: Location;
+
+  /**
+   * Code relationships (container, extends, implements, etc.)
+   */
+  relations?: Relations;
 
   /**
    * Documentation content for this item
@@ -42,73 +79,26 @@ export interface DocItem {
   items?: DocItem[];
 
   /**
-   * Source location information
-   */
-  location?: {
-    /**
-     * Source file path (relative to project root)
-     */
-    file: string;
-
-    /**
-     * Line number where the item is defined
-     */
-    line?: number;
-
-    /**
-     * Column number where the item is defined
-     */
-    column?: number;
-  };
-
-  /**
-   * Visibility/access level
-   */
-  visibility?: 'public' | 'private' | 'protected' | 'internal';
-
-  /**
-   * Whether the item is static
-   */
-  isStatic?: boolean;
-
-  /**
-   * Whether the item is abstract
-   */
-  isAbstract?: boolean;
-
-  /**
-   * Whether the item is readonly/const
-   */
-  isReadonly?: boolean;
-
-  /**
-   * Signature information (for functions, methods, constructors)
-   */
-  signature?: {
-    /**
-     * Parameters
-     */
-    parameters?: Parameter[];
-
-    /**
-     * Return type
-     */
-    returnType?: TypeReference;
-
-    /**
-     * Generic/template parameters
-     */
-    typeParameters?: TypeParameter[];
-  };
-
-  /**
-   * Type information (for properties, variables, type aliases)
-   */
-  type?: TypeReference;
-
-  /**
-   * Additional language-specific metadata
-   * This allows preserving language-specific information without breaking the universal model
+   * Language-specific metadata
+   *
+   * Per the OpenDocs specification, language-specific fields like visibility, signature,
+   * isStatic, isReadonly, type, etc. should be placed in this metadata field, not as
+   * top-level properties. This maintains a clean universal model while preserving all
+   * language-specific information.
+   *
+   * Example:
+   * ```json
+   * {
+   *   "metadata": {
+   *     "visibility": "public",
+   *     "isStatic": true,
+   *     "signature": {
+   *       "parameters": [...],
+   *       "returnType": {...}
+   *     }
+   *   }
+   * }
+   * ```
    */
   metadata?: Record<string, unknown>;
 
@@ -312,11 +302,12 @@ export class DocItemUtils {
 
   /**
    * Get all public members of an item
+   * Note: Visibility is now in metadata field
    */
   static getPublicMembers(item: DocItem): DocItem[] {
     return (
       item.items?.filter(
-        child => child.visibility === 'public' || child.visibility === undefined
+        child => (child.metadata as any)?.visibility === 'public' || (child.metadata as any)?.visibility === undefined
       ) ?? []
     );
   }

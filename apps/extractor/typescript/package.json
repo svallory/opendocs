@@ -1,6 +1,6 @@
 {
   "name": "@opendocs/extractor-typescript",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenDocs extractor for TypeScript/JavaScript projects",
   "keywords": [
     "opendocs",
@@ -35,5 +35,10 @@
   "devDependencies": {
     "@opendocs/model": "file:../../../libs/model/typescript",
     "@types/node": "^20.11.16"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.app.json",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
   }
 }

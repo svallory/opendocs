@@ -1,38 +1,43 @@
 /**
  * Represents a documentation tag (e.g., @param, @returns, @deprecated)
  *
- * DocTags provide structured metadata about code elements through standardized
- * annotations. They can be simple flags (@deprecated) or complex with parameters
- * and descriptions (@param name description).
+ * Per the OpenDocs specification, DocTags have a standardized structure:
+ * - `name`: The tag name without @ symbol (e.g., "param", "returns")
+ * - `content`: The tag content/description
+ * - `parameters`: Optional object with tag-specific parameters (name, type, etc.)
+ *
+ * Example:
+ * ```json
+ * {
+ *   "name": "param",
+ *   "content": "The width of the rectangle",
+ *   "parameters": {
+ *     "name": "width",
+ *     "type": "number"
+ *   }
+ * }
+ * ```
  */
 export interface DocTag {
   /**
    * Tag name without the @ symbol (e.g., "param", "returns", "deprecated")
    */
-  tag: string;
+  name: string;
 
   /**
-   * Optional tag content/description
+   * Tag content/description
    * For @param: the parameter description
    * For @returns: the return value description
    * For @example: the example code
    */
-  content?: string;
+  content: string;
 
   /**
-   * Optional parameter name (for @param, @throws, etc.)
+   * Optional tag parameters (name, type, etc.)
+   * For @param: { name: "paramName", type: "ParamType" }
+   * For @throws: { name: "ExceptionType" }
    */
-  name?: string;
-
-  /**
-   * Optional type information (for @param, @returns, etc.)
-   */
-  type?: string;
-
-  /**
-   * Additional tag-specific metadata
-   */
-  metadata?: Record<string, unknown>;
+  parameters?: Record<string, string>;
 }
 
 /**

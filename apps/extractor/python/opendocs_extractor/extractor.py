@@ -4,7 +4,8 @@ import ast
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from dataclasses import dataclass
 
 from docstring_parser import parse as parse_docstring
 from opendocs_model import (
@@ -18,7 +19,39 @@ from opendocs_model import (
     ItemKind,
     TagName,
     VERSION,
+    Repository,
 )
+
+
+@dataclass
+class ExtractionContext:
+    """Context for tracking FQN generation during extraction."""
+    module_path: str              # e.g., "calculator"
+    current_class: Optional[str] = None  # e.g., "Calculator"
+    parent_ids: List[str] = None  # Stack of parent FQNs
+
+    def __post_init__(self):
+        if self.parent_ids is None:
+            self.parent_ids = []
+
+
+def get_module_path(file_path: Path, source_dir: Path) -> str:
+    """Convert file path to module path (calculator.py → calculator)."""
+    rel_path = file_path.relative_to(source_dir)
+
+    if rel_path.name == "__init__.py":
+        return str(rel_path.parent).replace("/", ".")
+
+    return str(rel_path.with_suffix("")).replace("/", ".")
+
+
+def build_fqn(module_path: str, class_name: Optional[str], item_name: str) -> str:
+    """Build Python FQN: module.Class.method"""
+    parts = [module_path]
+    if class_name:
+        parts.append(class_name)
+    parts.append(item_name)
+    return ".".join(parts)
 
 
 def extract_documentation(
@@ -26,6 +59,9 @@ def extract_documentation(
     project_name: Optional[str] = None,
     project_id: Optional[str] = None,
     project_version: Optional[str] = None,
+    repo_url: Optional[str] = None,
+    repo_type: Optional[str] = None,
+    file_url_template: Optional[str] = None,
 ) -> DocSet:
     """
     Extract OpenDocs documentation from a Python project.
@@ -41,7 +77,7 @@ def extract_documentation(
     """
     # Create DocSet
     doc_set: DocSet = {
-        "id": project_id or source_dir.name,
+        "id": project_id or project_name or source_dir.name,
         "name": project_name or source_dir.name,
         "version": VERSION,
         "format": "json",
@@ -51,19 +87,27 @@ def extract_documentation(
             "modified": datetime.now().isoformat(),
             "generator": {
                 "name": "opendocs-extractor-python",
-                "version": "0.1.0",
+                "version": "0.2.0",
             },
         },
     }
 
     # Create Project
     project: DocSet["projects"][0] = {  # type: ignore
-        "id": project_id or source_dir.name,
+        "id": project_id or project_name or source_dir.name,
         "name": project_name or source_dir.name,
         "language": Language.PYTHON,
         "version": project_version or get_project_version(source_dir),
         "items": [],
     }
+
+    # Add repository info if provided
+    if repo_url:
+        project["repository"] = Repository(
+            type=repo_type or "git",
+            url=repo_url,
+            fileUrlTemplate=file_url_template,
+        )
 
     # Extract from Python files
     for py_file in source_dir.rglob("*.py"):
@@ -98,8 +142,12 @@ def extract_from_file(file_path: Path, source_dir: Path) -> List[DocItem]:
         tree = ast.parse(source, filename=str(file_path))
         items: List[DocItem] = []
 
+        # Create extraction context for this file
+        module_path = get_module_path(file_path, source_dir)
+        context = ExtractionContext(module_path=module_path)
+
         for node in ast.iter_child_nodes(tree):
-            item = extract_from_node(node, file_path, source_dir)
+            item = extract_from_node(node, file_path, source_dir, context)
             if item:
                 items.append(item)
 
@@ -111,25 +159,38 @@ def extract_from_file(file_path: Path, source_dir: Path) -> List[DocItem]:
 
 
 def extract_from_node(
-    node: ast.AST, file_path: Path, source_dir: Path
+    node: ast.AST, file_path: Path, source_dir: Path, context: ExtractionContext
 ) -> Optional[DocItem]:
     """Extract a DocItem from an AST node."""
     if isinstance(node, ast.ClassDef):
-        return extract_class(node, file_path, source_dir)
+        return extract_class(node, file_path, source_dir, context)
     elif isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef):
         # Only extract module-level functions
-        return extract_function(node, file_path, source_dir)
+        return extract_function(node, file_path, source_dir, context)
 
     return None
 
 
-def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path) -> DocItem:
+def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path, context: ExtractionContext) -> DocItem:
     """Extract a class declaration."""
+    fqn = build_fqn(context.module_path, None, node.name)
+
+    # Create a new context for nested items
+    nested_context = ExtractionContext(
+        module_path=context.module_path,
+        current_class=node.name,
+        parent_ids=context.parent_ids + [fqn]
+    )
+
     item: DocItem = {
-        "id": node.name,
+        "id": fqn,
         "name": node.name,
         "kind": ItemKind.CLASS,
+        "language": Language.PYTHON,
         "location": get_location(node, file_path, source_dir),
+        "relations": {
+            "container": context.module_path,
+        },
         "items": [],
     }
 
@@ -141,7 +202,7 @@ def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path) -> DocI
     # Extract methods and properties
     for child in node.body:
         if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            method = extract_method(child, file_path, source_dir)
+            method = extract_method(child, file_path, source_dir, nested_context)
             if method:
                 if "items" not in item:
                     item["items"] = []
@@ -151,20 +212,28 @@ def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path) -> DocI
 
 
 def extract_method(
-    node: ast.FunctionDef | ast.AsyncFunctionDef, file_path: Path, source_dir: Path
+    node: ast.FunctionDef | ast.AsyncFunctionDef, file_path: Path, source_dir: Path, context: ExtractionContext
 ) -> DocItem:
     """Extract a method declaration."""
     # Determine visibility based on naming convention
     visibility = "private" if node.name.startswith("_") else "public"
 
+    fqn = build_fqn(context.module_path, context.current_class, node.name)
+
     item: DocItem = {
-        "id": node.name,
+        "id": fqn,
         "name": node.name,
         "kind": ItemKind.CONSTRUCTOR if node.name == "__init__" else ItemKind.METHOD,
+        "language": Language.PYTHON,
         "location": get_location(node, file_path, source_dir),
-        "visibility": visibility,  # type: ignore
-        "signature": {
-            "parameters": extract_parameters(node),
+        "relations": {
+            "container": context.parent_ids[-1] if context.parent_ids else context.module_path,
+        },
+        "metadata": {
+            "visibility": visibility,
+            "signature": {
+                "parameters": extract_parameters(node),
+            },
         },
     }
 
@@ -175,24 +244,30 @@ def extract_method(
 
     # Extract return type annotation
     if node.returns:
-        if "signature" not in item:
-            item["signature"] = {}
-        item["signature"]["returnType"] = {"name": ast.unparse(node.returns)}
+        item["metadata"]["signature"]["returnType"] = {"name": ast.unparse(node.returns)}
 
     return item
 
 
 def extract_function(
-    node: ast.FunctionDef | ast.AsyncFunctionDef, file_path: Path, source_dir: Path
+    node: ast.FunctionDef | ast.AsyncFunctionDef, file_path: Path, source_dir: Path, context: ExtractionContext
 ) -> DocItem:
     """Extract a function declaration."""
+    fqn = build_fqn(context.module_path, None, node.name)
+
     item: DocItem = {
-        "id": node.name,
+        "id": fqn,
         "name": node.name,
         "kind": ItemKind.FUNCTION,
+        "language": Language.PYTHON,
         "location": get_location(node, file_path, source_dir),
-        "signature": {
-            "parameters": extract_parameters(node),
+        "relations": {
+            "container": context.module_path,
+        },
+        "metadata": {
+            "signature": {
+                "parameters": extract_parameters(node),
+            },
         },
     }
 
@@ -203,7 +278,7 @@ def extract_function(
 
     # Extract return type annotation
     if node.returns:
-        item["signature"]["returnType"] = {"name": ast.unparse(node.returns)}
+        item["metadata"]["signature"]["returnType"] = {"name": ast.unparse(node.returns)}
 
     return item
 
@@ -250,39 +325,43 @@ def extract_docblock(node: ast.AST) -> Optional[DocBlock]:
             description_parts.append(parsed.long_description)
         docblock["description"] = "\n\n".join(description_parts)
 
-    # Tags
-    tags: List[DocTag] = []
+    # Tags - use Record<string, (string | DocTag)[]> format per spec
+    tags: Dict[str, List[Any]] = {}
 
     # Parameters
     for param in parsed.params:
         tag: DocTag = {
-            "tag": TagName.PARAM,
-            "name": param.arg_name,
+            "name": TagName.PARAM,
+            "content": param.description or "",
         }
+        # Put parameter name and type in parameters object
+        parameters: Dict[str, str] = {"name": param.arg_name}
         if param.type_name:
-            tag["type"] = param.type_name
-        if param.description:
-            tag["content"] = param.description
-        tags.append(tag)
+            parameters["type"] = param.type_name
+        tag["parameters"] = parameters
+
+        if TagName.PARAM not in tags:
+            tags[TagName.PARAM] = []
+        tags[TagName.PARAM].append(tag)
 
     # Returns
     if parsed.returns:
-        tag: DocTag = {"tag": TagName.RETURNS}
-        if parsed.returns.type_name:
-            tag["type"] = parsed.returns.type_name
-        if parsed.returns.description:
-            tag["content"] = parsed.returns.description
-        tags.append(tag)
+        return_content = parsed.returns.description or ""
+        # Simple string for returns per spec examples
+        if TagName.RETURNS not in tags:
+            tags[TagName.RETURNS] = []
+        tags[TagName.RETURNS].append(return_content)
 
-    # Raises
+    # Raises/Throws
     for raises in parsed.raises:
         tag: DocTag = {
-            "tag": TagName.THROWS,
-            "name": raises.type_name,
+            "name": TagName.THROWS,
+            "content": raises.description or "",
+            "parameters": {"name": raises.type_name}
         }
-        if raises.description:
-            tag["content"] = raises.description
-        tags.append(tag)
+        if TagName.THROWS not in tags:
+            tags[TagName.THROWS] = []
+        tags[TagName.THROWS].append(tag)
 
     if tags:
         docblock["tags"] = tags
@@ -293,8 +372,8 @@ def extract_docblock(node: ast.AST) -> Optional[DocBlock]:
 def get_location(node: ast.AST, file_path: Path, source_dir: Path) -> Location:
     """Get source location for a node."""
     return {
-        "file": str(file_path.relative_to(source_dir)),
-        "line": node.lineno,
+        "path": str(file_path.relative_to(source_dir)),
+        "number": node.lineno,
         "column": node.col_offset + 1,
     }
 

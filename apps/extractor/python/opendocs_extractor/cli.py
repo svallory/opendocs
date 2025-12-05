@@ -12,7 +12,7 @@ from .extractor import extract_documentation
 
 
 @click.group()
-@click.version_option(version="0.1.0")
+@click.version_option(version="0.2.0")
 def cli() -> None:
     """Extract OpenDocs documentation from Python projects."""
     pass
@@ -36,12 +36,18 @@ def cli() -> None:
 @click.option("--project-name", type=str, help="Project name")
 @click.option("--project-id", type=str, help="Project ID")
 @click.option("--project-version", type=str, help="Project version")
+@click.option("--repo-url", type=str, help="Repository URL")
+@click.option("--repo-type", type=str, help="Repository type", default="git")
+@click.option("--file-url-template", type=str, help="File URL template")
 def extract(
     source: Path,
     output: Path,
     project_name: Optional[str],
     project_id: Optional[str],
     project_version: Optional[str],
+    repo_url: Optional[str],
+    repo_type: Optional[str],
+    file_url_template: Optional[str],
 ) -> None:
     """Extract documentation from a Python project."""
     try:
@@ -54,6 +60,9 @@ def extract(
             project_name=project_name,
             project_id=project_id,
             project_version=project_version,
+            repo_url=repo_url,
+            repo_type=repo_type,
+            file_url_template=file_url_template,
         )
 
         # Write output

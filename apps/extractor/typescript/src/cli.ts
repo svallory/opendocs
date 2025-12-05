@@ -5,12 +5,22 @@ import { extractDocumentation } from './extractor';
 import * as fs from 'fs';
 import * as path from 'path';
 
+interface ExtractOptions {
+  config: string;
+  output: string;
+  projectName?: string;
+  projectId?: string;
+  repoUrl?: string;
+  repoType?: string;
+  fileUrlTemplate?: string;
+}
+
 const program = new Command();
 
 program
   .name('opendocs-extract-ts')
   .description('Extract OpenDocs documentation from TypeScript/JavaScript projects')
-  .version('0.1.0');
+  .version('0.2.0');
 
 program
   .command('extract')
@@ -19,7 +29,10 @@ program
   .option('-o, --output <path>', 'Output file path', './opendocs.json')
   .option('-p, --project-name <name>', 'Project name')
   .option('-i, --project-id <id>', 'Project ID')
-  .action(async (options) => {
+  .option('--repo-url <url>', 'Repository URL')
+  .option('--repo-type <type>', 'Repository type', 'git')
+  .option('--file-url-template <template>', 'File URL template')
+  .action(async (options: ExtractOptions) => {
     try {
       console.log('Extracting documentation...');
       console.log(`Config: ${options.config}`);
@@ -36,6 +49,9 @@ program
         tsconfigPath: path.resolve(options.config),
         projectName: options.projectName,
         projectId: options.projectId,
+        repoUrl: options.repoUrl,
+        repoType: options.repoType,
+        fileUrlTemplate: options.fileUrlTemplate,
       });
 
       // Write output
@@ -51,7 +67,7 @@ program
       console.log(`✓ Documentation extracted successfully to ${outputPath}`);
       console.log(`  Projects: ${docSet.projects.length}`);
       console.log(
-        `  Total items: ${docSet.projects.reduce((sum, p) => sum + (p.items?.length || 0), 0)}`
+        `  Total items: ${docSet.projects.reduce((sum: number, p) => sum + (p.items?.length || 0), 0)}`
       );
     } catch (error) {
       console.error('Error extracting documentation:', error);

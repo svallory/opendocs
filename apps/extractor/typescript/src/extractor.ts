@@ -16,13 +16,42 @@ export interface ExtractorOptions {
   tsconfigPath: string;
   projectName?: string;
   projectId?: string;
+  repoUrl?: string;
+  repoType?: string;
+  fileUrlTemplate?: string;
+}
+
+/**
+ * Context for tracking FQN generation during extraction
+ */
+interface ExtractionContext {
+  packageName: string;      // From package.json
+  projectRoot: string;       // Project root directory
+  parentIds: string[];       // Stack of parent FQNs for nested items
+}
+
+/**
+ * Build a fully qualified name for a DocItem
+ * Format: package#Symbol or package#Parent#Child
+ */
+function buildFQN(context: ExtractionContext, name: string): string {
+  const { packageName, parentIds } = context;
+
+  if (parentIds.length === 0) {
+    return `${packageName}#${name}`;  // Top-level: package#Symbol
+  }
+
+  const parentFQN = parentIds[parentIds.length - 1];
+  return `${parentFQN}#${name}`;  // Nested: parent#child
 }
 
 /**
  * Extract OpenDocs documentation from a TypeScript project
  */
 export async function extractDocumentation(options: ExtractorOptions): Promise<DocSet> {
-  const { tsconfigPath, projectName, projectId } = options;
+  const { tsconfigPath, projectName, projectId, repoUrl, repoType, fileUrlTemplate } = options;
+  const projectRoot = path.dirname(tsconfigPath);
+  const packageName = getPackageName(projectRoot);
 
   // Read and parse tsconfig
   const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
@@ -33,7 +62,7 @@ export async function extractDocumentation(options: ExtractorOptions): Promise<D
   const parsedConfig = ts.parseJsonConfigFileContent(
     configFile.config,
     ts.sys,
-    path.dirname(tsconfigPath)
+    projectRoot
   );
 
   // Create TypeScript program
@@ -42,27 +71,43 @@ export async function extractDocumentation(options: ExtractorOptions): Promise<D
 
   // Create DocSet
   const docSet = DocSetUtils.create({
-    id: projectId || path.basename(path.dirname(tsconfigPath)),
-    name: projectName || path.basename(path.dirname(tsconfigPath)),
+    id: projectId || projectName || path.basename(projectRoot),
+    name: projectName || path.basename(projectRoot),
     generator: {
       name: '@opendocs/extractor-typescript',
-      version: '0.1.0',
+      version: '0.2.0',
     },
   });
 
   // Create Project
   const project: Project = {
-    id: projectId || path.basename(path.dirname(tsconfigPath)),
-    name: projectName || path.basename(path.dirname(tsconfigPath)),
+    id: projectId || projectName || path.basename(projectRoot),
+    name: projectName || path.basename(projectRoot),
     language: SupportedLanguages.TYPESCRIPT,
-    version: getPackageVersion(path.dirname(tsconfigPath)),
+    version: getPackageVersion(projectRoot),
     items: [],
+  };
+
+  // Add repository info if provided
+  if (repoUrl) {
+    project.repository = {
+      type: repoType || 'git',
+      url: repoUrl,
+      ...(fileUrlTemplate && { fileUrlTemplate }),
+    };
+  }
+
+  // Create extraction context
+  const context: ExtractionContext = {
+    packageName,
+    projectRoot,
+    parentIds: [],
   };
 
   // Extract documentation from source files
   for (const sourceFile of program.getSourceFiles()) {
     if (!sourceFile.isDeclarationFile && !sourceFile.fileName.includes('node_modules')) {
-      const items = extractFromSourceFile(sourceFile, checker);
+      const items = extractFromSourceFile(sourceFile, checker, context);
       project.items?.push(...items);
     }
   }
@@ -75,11 +120,11 @@ export async function extractDocumentation(options: ExtractorOptions): Promise<D
 /**
  * Extract documentation items from a source file
  */
-function extractFromSourceFile(sourceFile: ts.SourceFile, checker: ts.TypeChecker): DocItem[] {
+function extractFromSourceFile(sourceFile: ts.SourceFile, checker: ts.TypeChecker, context: ExtractionContext): DocItem[] {
   const items: DocItem[] = [];
 
   ts.forEachChild(sourceFile, (node) => {
-    const item = extractFromNode(node, sourceFile, checker);
+    const item = extractFromNode(node, sourceFile, checker, context);
     if (item) {
       items.push(item);
     }
@@ -94,7 +139,8 @@ function extractFromSourceFile(sourceFile: ts.SourceFile, checker: ts.TypeChecke
 function extractFromNode(
   node: ts.Node,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem | null {
   // Only process exported declarations
   if (!isNodeExported(node)) {
@@ -104,15 +150,15 @@ function extractFromNode(
   let item: DocItem | null = null;
 
   if (ts.isClassDeclaration(node) && node.name) {
-    item = extractClass(node, sourceFile, checker);
+    item = extractClass(node, sourceFile, checker, context);
   } else if (ts.isFunctionDeclaration(node) && node.name) {
-    item = extractFunction(node, sourceFile, checker);
+    item = extractFunction(node, sourceFile, checker, context);
   } else if (ts.isInterfaceDeclaration(node)) {
-    item = extractInterface(node, sourceFile, checker);
+    item = extractInterface(node, sourceFile, checker, context);
   } else if (ts.isEnumDeclaration(node)) {
-    item = extractEnum(node, sourceFile, checker);
+    item = extractEnum(node, sourceFile, checker, context);
   } else if (ts.isTypeAliasDeclaration(node)) {
-    item = extractTypeAlias(node, sourceFile, checker);
+    item = extractTypeAlias(node, sourceFile, checker, context);
   }
 
   return item;
@@ -124,22 +170,34 @@ function extractFromNode(
 function extractClass(
   node: ts.ClassDeclaration,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem {
   const name = node.name?.text || 'AnonymousClass';
+  const fqn = buildFQN(context, name);
+
+  // Create a new context for nested items
+  const nestedContext: ExtractionContext = {
+    ...context,
+    parentIds: [...context.parentIds, fqn],
+  };
 
   const item: DocItem = {
-    id: name,
+    id: fqn,
     name,
     kind: ItemKind.CLASS,
-    location: getLocation(node, sourceFile),
+    language: SupportedLanguages.TYPESCRIPT,
+    location: getLocation(node, sourceFile, context.projectRoot),
+    relations: {
+      container: context.packageName,
+    },
     docBlock: extractDocBlock(node),
     items: [],
   };
 
   // Extract members
   node.members.forEach((member) => {
-    const memberItem = extractClassMember(member, sourceFile, checker);
+    const memberItem = extractClassMember(member, sourceFile, checker, nestedContext);
     if (memberItem) {
       item.items?.push(memberItem);
     }
@@ -154,14 +212,15 @@ function extractClass(
 function extractClassMember(
   member: ts.ClassElement,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem | null {
   if (ts.isMethodDeclaration(member) && member.name && ts.isIdentifier(member.name)) {
-    return extractMethod(member, sourceFile, checker);
+    return extractMethod(member, sourceFile, checker, context);
   } else if (ts.isPropertyDeclaration(member) && member.name && ts.isIdentifier(member.name)) {
-    return extractProperty(member, sourceFile, checker);
+    return extractProperty(member, sourceFile, checker, context);
   } else if (ts.isConstructorDeclaration(member)) {
-    return extractConstructor(member, sourceFile, checker);
+    return extractConstructor(member, sourceFile, checker, context);
   }
 
   return null;
@@ -173,21 +232,29 @@ function extractClassMember(
 function extractMethod(
   node: ts.MethodDeclaration,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem {
   const name = (node.name as ts.Identifier).text;
+  const fqn = buildFQN(context, name);
 
   return {
-    id: name,
+    id: fqn,
     name,
     kind: ItemKind.METHOD,
-    location: getLocation(node, sourceFile),
-    visibility: getVisibility(node),
-    isStatic: hasModifier(node, ts.SyntaxKind.StaticKeyword),
+    language: SupportedLanguages.TYPESCRIPT,
+    location: getLocation(node, sourceFile, context.projectRoot),
+    relations: {
+      container: context.parentIds[context.parentIds.length - 1] || context.packageName,
+    },
     docBlock: extractDocBlock(node),
-    signature: {
-      parameters: extractParameters(node, checker),
-      returnType: extractReturnType(node, checker),
+    metadata: {
+      visibility: getVisibility(node),
+      isStatic: hasModifier(node, ts.SyntaxKind.StaticKeyword),
+      signature: {
+        parameters: extractParameters(node, checker),
+        returnType: extractReturnType(node, checker),
+      },
     },
   };
 }
@@ -198,20 +265,28 @@ function extractMethod(
 function extractProperty(
   node: ts.PropertyDeclaration,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem {
   const name = (node.name as ts.Identifier).text;
+  const fqn = buildFQN(context, name);
 
   return {
-    id: name,
+    id: fqn,
     name,
     kind: ItemKind.PROPERTY,
-    location: getLocation(node, sourceFile),
-    visibility: getVisibility(node),
-    isStatic: hasModifier(node, ts.SyntaxKind.StaticKeyword),
-    isReadonly: hasModifier(node, ts.SyntaxKind.ReadonlyKeyword),
+    language: SupportedLanguages.TYPESCRIPT,
+    location: getLocation(node, sourceFile, context.projectRoot),
+    relations: {
+      container: context.parentIds[context.parentIds.length - 1] || context.packageName,
+    },
     docBlock: extractDocBlock(node),
-    type: node.type ? { name: node.type.getText() } : undefined,
+    metadata: {
+      visibility: getVisibility(node),
+      isStatic: hasModifier(node, ts.SyntaxKind.StaticKeyword),
+      isReadonly: hasModifier(node, ts.SyntaxKind.ReadonlyKeyword),
+      type: node.type ? { name: node.type.getText() } : undefined,
+    },
   };
 }
 
@@ -221,17 +296,26 @@ function extractProperty(
 function extractConstructor(
   node: ts.ConstructorDeclaration,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem {
+  const fqn = buildFQN(context, 'constructor');
+
   return {
-    id: 'constructor',
+    id: fqn,
     name: 'constructor',
     kind: ItemKind.CONSTRUCTOR,
-    location: getLocation(node, sourceFile),
-    visibility: getVisibility(node),
+    language: SupportedLanguages.TYPESCRIPT,
+    location: getLocation(node, sourceFile, context.projectRoot),
+    relations: {
+      container: context.parentIds[context.parentIds.length - 1] || context.packageName,
+    },
     docBlock: extractDocBlock(node),
-    signature: {
-      parameters: extractParameters(node, checker),
+    metadata: {
+      visibility: getVisibility(node),
+      signature: {
+        parameters: extractParameters(node, checker),
+      },
     },
   };
 }
@@ -242,19 +326,27 @@ function extractConstructor(
 function extractFunction(
   node: ts.FunctionDeclaration,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem {
   const name = node.name?.text || 'AnonymousFunction';
+  const fqn = buildFQN(context, name);
 
   return {
-    id: name,
+    id: fqn,
     name,
     kind: ItemKind.FUNCTION,
-    location: getLocation(node, sourceFile),
+    language: SupportedLanguages.TYPESCRIPT,
+    location: getLocation(node, sourceFile, context.projectRoot),
+    relations: {
+      container: context.packageName,
+    },
     docBlock: extractDocBlock(node),
-    signature: {
-      parameters: extractParameters(node, checker),
-      returnType: extractReturnType(node, checker),
+    metadata: {
+      signature: {
+        parameters: extractParameters(node, checker),
+        returnType: extractReturnType(node, checker),
+      },
     },
   };
 }
@@ -265,15 +357,27 @@ function extractFunction(
 function extractInterface(
   node: ts.InterfaceDeclaration,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem {
   const name = node.name.text;
+  const fqn = buildFQN(context, name);
+
+  // Create a new context for nested items
+  const nestedContext: ExtractionContext = {
+    ...context,
+    parentIds: [...context.parentIds, fqn],
+  };
 
   const item: DocItem = {
-    id: name,
+    id: fqn,
     name,
     kind: ItemKind.INTERFACE,
-    location: getLocation(node, sourceFile),
+    language: SupportedLanguages.TYPESCRIPT,
+    location: getLocation(node, sourceFile, context.projectRoot),
+    relations: {
+      container: context.packageName,
+    },
     docBlock: extractDocBlock(node),
     items: [],
   };
@@ -281,12 +385,20 @@ function extractInterface(
   // Extract members
   node.members.forEach((member) => {
     if (ts.isPropertySignature(member) && member.name && ts.isIdentifier(member.name)) {
+      const memberFQN = buildFQN(nestedContext, member.name.text);
       item.items?.push({
-        id: member.name.text,
+        id: memberFQN,
         name: member.name.text,
         kind: ItemKind.PROPERTY,
-        type: member.type ? { name: member.type.getText() } : undefined,
+        language: SupportedLanguages.TYPESCRIPT,
+        location: getLocation(member, sourceFile, context.projectRoot),
+        relations: {
+          container: fqn,
+        },
         docBlock: extractDocBlock(member),
+        metadata: {
+          type: member.type ? { name: member.type.getText() } : undefined,
+        },
       });
     }
   });
@@ -300,15 +412,27 @@ function extractInterface(
 function extractEnum(
   node: ts.EnumDeclaration,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem {
   const name = node.name.text;
+  const fqn = buildFQN(context, name);
+
+  // Create a new context for nested items
+  const nestedContext: ExtractionContext = {
+    ...context,
+    parentIds: [...context.parentIds, fqn],
+  };
 
   const item: DocItem = {
-    id: name,
+    id: fqn,
     name,
     kind: ItemKind.ENUM,
-    location: getLocation(node, sourceFile),
+    language: SupportedLanguages.TYPESCRIPT,
+    location: getLocation(node, sourceFile, context.projectRoot),
+    relations: {
+      container: context.packageName,
+    },
     docBlock: extractDocBlock(node),
     items: [],
   };
@@ -316,10 +440,16 @@ function extractEnum(
   // Extract enum members
   node.members.forEach((member) => {
     if (ts.isIdentifier(member.name)) {
+      const memberFQN = buildFQN(nestedContext, member.name.text);
       item.items?.push({
-        id: member.name.text,
+        id: memberFQN,
         name: member.name.text,
         kind: ItemKind.ENUM_MEMBER,
+        language: SupportedLanguages.TYPESCRIPT,
+        location: getLocation(member, sourceFile, context.projectRoot),
+        relations: {
+          container: fqn,
+        },
         docBlock: extractDocBlock(member),
       });
     }
@@ -334,17 +464,25 @@ function extractEnum(
 function extractTypeAlias(
   node: ts.TypeAliasDeclaration,
   sourceFile: ts.SourceFile,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  context: ExtractionContext
 ): DocItem {
   const name = node.name.text;
+  const fqn = buildFQN(context, name);
 
   return {
-    id: name,
+    id: fqn,
     name,
     kind: ItemKind.TYPE_ALIAS,
-    location: getLocation(node, sourceFile),
+    language: SupportedLanguages.TYPESCRIPT,
+    location: getLocation(node, sourceFile, context.projectRoot),
+    relations: {
+      container: context.packageName,
+    },
     docBlock: extractDocBlock(node),
-    type: { name: node.type.getText() },
+    metadata: {
+      type: { name: node.type.getText() },
+    },
   };
 }
 
@@ -359,9 +497,7 @@ function extractDocBlock(node: ts.Node): DocBlock | undefined {
     return undefined;
   }
 
-  const docBlock: DocBlock = {
-    tags: [],
-  };
+  const docBlock: DocBlock = {};
 
   // Extract description from JSDoc comment
   for (const comment of jsDocComments) {
@@ -375,6 +511,9 @@ function extractDocBlock(node: ts.Node): DocBlock | undefined {
     }
   }
 
+  // Tags - use Record<string, (string | DocTag)[]> format per spec
+  const tags: Record<string, any[]> = {};
+
   // Extract tags
   for (const tag of jsDocTags) {
     const tagName = tag.tagName.text;
@@ -383,23 +522,49 @@ function extractDocBlock(node: ts.Node): DocBlock | undefined {
         ? tag.comment
         : tag.comment?.map((c) => c.text).join('') || '';
 
-    const docTag: DocTag = {
-      tag: tagName,
-      content: commentText,
-    };
-
-    // Extract additional info for specific tags
+    // Handle @param tags specially
     if (ts.isJSDocParameterTag(tag) && tag.name && ts.isIdentifier(tag.name)) {
-      docTag.name = tag.name.text;
-      if (tag.typeExpression) {
-        docTag.type = tag.typeExpression.getText();
-      }
-    }
+      const docTag: DocTag = {
+        name: tagName,
+        content: commentText,
+        parameters: {
+          name: tag.name.text,
+        },
+      };
 
-    docBlock.tags?.push(docTag);
+      if (tag.typeExpression) {
+        docTag.parameters!.type = tag.typeExpression.getText();
+      }
+
+      if (!tags[tagName]) {
+        tags[tagName] = [];
+      }
+      tags[tagName].push(docTag);
+    } else if (tagName === 'returns' || tagName === 'return') {
+      // Simple string for returns per spec examples
+      if (!tags.returns) {
+        tags.returns = [];
+      }
+      tags.returns.push(commentText);
+    } else {
+      // Other tags
+      const docTag: DocTag = {
+        name: tagName,
+        content: commentText,
+      };
+
+      if (!tags[tagName]) {
+        tags[tagName] = [];
+      }
+      tags[tagName].push(docTag);
+    }
   }
 
-  return docBlock.description || docBlock.tags?.length ? docBlock : undefined;
+  if (Object.keys(tags).length > 0) {
+    docBlock.tags = tags;
+  }
+
+  return docBlock.description || docBlock.tags ? docBlock : undefined;
 }
 
 /**
@@ -432,12 +597,13 @@ function extractReturnType(node: ts.FunctionLikeDeclaration, checker: ts.TypeChe
  */
 function getLocation(
   node: ts.Node,
-  sourceFile: ts.SourceFile
-): { file: string; line: number; column: number } {
+  sourceFile: ts.SourceFile,
+  projectRoot: string
+): { path: string; number: number; column: number } {
   const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
   return {
-    file: sourceFile.fileName,
-    line: line + 1,
+    path: path.relative(projectRoot, sourceFile.fileName),
+    number: line + 1,
     column: character + 1,
   };
 }
@@ -483,4 +649,20 @@ function getPackageVersion(dir: string): string | undefined {
     }
   }
   return undefined;
+}
+
+/**
+ * Get package name from package.json for FQN generation
+ */
+function getPackageName(dir: string): string {
+  const packageJsonPath = path.join(dir, 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    try {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      return packageJson.name || path.basename(dir);
+    } catch {
+      return path.basename(dir);
+    }
+  }
+  return path.basename(dir);
 }

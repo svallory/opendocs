@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Optional, TypedDict
 from typing_extensions import NotRequired
 
 # Version
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 class Generator(TypedDict, total=False):
@@ -15,11 +15,11 @@ class Generator(TypedDict, total=False):
 
 
 class Repository(TypedDict, total=False):
-    """Repository information."""
+    """Source repository information for linking to source code."""
 
-    type: str
-    url: str
-    directory: NotRequired[str]
+    type: str  # Repository type (git, svn, mercurial, etc.)
+    url: str  # Repository URL
+    fileUrlTemplate: NotRequired[str]  # Template for generating file URLs: {repo}/blob/{hash}/{path}#L{line}
 
 
 class Metadata(TypedDict, total=False):
@@ -42,11 +42,9 @@ class Deprecated(TypedDict, total=False):
 class DocTag(TypedDict, total=False):
     """Documentation tag (e.g., @param, @returns)."""
 
-    tag: str
-    content: NotRequired[str]
-    name: NotRequired[str]
-    type: NotRequired[str]
-    metadata: NotRequired[Dict[str, Any]]
+    name: str  # Tag name without @
+    content: str  # Tag content
+    parameters: NotRequired[Dict[str, str]]  # Tag parameters (name, type, etc.)
 
 
 class DocBlock(TypedDict, total=False):
@@ -54,7 +52,7 @@ class DocBlock(TypedDict, total=False):
 
     description: NotRequired[str]
     remarks: NotRequired[str]
-    tags: NotRequired[List[DocTag]]
+    tags: NotRequired[Dict[str, List[Any]]]  # Record<string, (string | DocTag)[]>
     examples: NotRequired[List[str]]
     deprecated: NotRequired[Deprecated]
     see: NotRequired[List[str]]
@@ -64,9 +62,9 @@ class DocBlock(TypedDict, total=False):
 class Location(TypedDict, total=False):
     """Source code location."""
 
-    file: str
-    line: NotRequired[int]
-    column: NotRequired[int]
+    path: str  # File path (relative to project root)
+    number: int  # Line number (1-indexed)
+    column: NotRequired[int]  # Column number (1-indexed)
 
 
 class TypeReference(TypedDict, total=False):
@@ -110,31 +108,35 @@ class Signature(TypedDict, total=False):
     typeParameters: NotRequired[List[TypeParameter]]
 
 
-class ContainerRef(TypedDict, total=False):
-    """Reference to a parent container."""
+class Relation(TypedDict, total=False):
+    """Typed relationship between DocItems."""
 
-    type: Literal["project", "item"]
-    id: str
-    ref: NotRequired[str]  # $ref
+    kind: str  # Relationship type (container, extends, implements, etc.)
+    target: str  # Target DocItem ID (language-native FQN)
+    metadata: NotRequired[Dict[str, Any]]  # Relationship-specific metadata
+
+
+# Relations type: map of relationship kinds to targets
+# Values can be: str (simple reference), Relation (complex with metadata), or List[Relation]
+Relations = Dict[str, Any]  # str | Relation | List[Relation] | List[str]
 
 
 class DocItem(TypedDict, total=False):
-    """Universal documentation item."""
+    """Universal documentation item.
 
-    id: str
+    Note: Language-specific fields like visibility, signature, isStatic, etc.
+    should be placed in the metadata field, not as top-level properties.
+    """
+
+    id: str  # Language-native fully qualified name
     name: str
     kind: str
-    container: NotRequired[ContainerRef]
+    language: str  # Source language
+    location: NotRequired[Location]
+    relations: NotRequired[Relations]  # Code relationships (container, extends, implements, etc.)
     docBlock: NotRequired[DocBlock]
     items: NotRequired[List["DocItem"]]
-    location: NotRequired[Location]
-    visibility: NotRequired[Literal["public", "private", "protected", "internal"]]
-    isStatic: NotRequired[bool]
-    isAbstract: NotRequired[bool]
-    isReadonly: NotRequired[bool]
-    signature: NotRequired[Signature]
-    type: NotRequired[TypeReference]
-    metadata: NotRequired[Dict[str, Any]]
+    metadata: NotRequired[Dict[str, Any]]  # Language-specific metadata (visibility, signature, etc.)
     ref: NotRequired[str]  # $ref
 
 
@@ -146,6 +148,7 @@ class Project(TypedDict, total=False):
     description: NotRequired[str]
     language: str
     version: NotRequired[str]
+    repository: NotRequired[Repository]  # Source repository information
     items: NotRequired[List[DocItem]]
     sourceRoot: NotRequired[str]
     metadata: NotRequired[Dict[str, Any]]
@@ -239,3 +242,32 @@ class Language:
     C = "c"
     RUBY = "ruby"
     PHP = "php"
+
+
+class RelationKind:
+    """Common relationship kinds used across languages."""
+
+    # Universal relationships
+    CONTAINER = "container"
+    EXTENDS = "extends"
+    IMPLEMENTS = "implements"
+
+    # TypeScript/JavaScript
+    TS_EXTENDS = "ts-extends"
+    TS_IMPLEMENTS = "ts-implements"
+
+    # Rust
+    RUST_TRAIT_IMPL = "rust-trait-impl"
+    RUST_SUPERTRAIT = "rust-supertrait"
+
+    # Go
+    GO_RECEIVER = "go-receiver"
+    GO_EMBED = "go-embed"
+
+    # Python
+    PYTHON_DECORATOR = "python-decorator"
+    PYTHON_METACLASS = "python-metaclass"
+
+    # Java/C#
+    JAVA_ANNOTATION = "java-annotation"
+    JAVA_GENERIC_BOUND = "java-generic-bound"

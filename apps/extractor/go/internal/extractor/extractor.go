@@ -14,12 +14,21 @@ import (
 	model "github.com/svallory/opendocs/libs/model/go"
 )
 
+// extractionContext holds context during extraction
+type extractionContext struct {
+	packageName string
+	currentType string
+}
+
 // Options for the extractor
 type Options struct {
-	SourcePath     string
-	ProjectName    string
-	ProjectID      string
-	ProjectVersion string
+	SourcePath      string
+	ProjectName     string
+	ProjectID       string
+	ProjectVersion  string
+	RepoURL         string
+	RepoType        string
+	FileURLTemplate string
 }
 
 // ExtractDocumentation extracts OpenDocs from a Go project
@@ -37,7 +46,12 @@ func ExtractDocumentation(opts Options) (*model.DocSet, error) {
 		projectName = filepath.Base(absPath)
 	}
 	if projectID == "" {
-		projectID = filepath.Base(absPath)
+		// Use projectName as fallback before using directory name
+		if projectName != "" {
+			projectID = projectName
+		} else {
+			projectID = filepath.Base(absPath)
+		}
 	}
 
 	// Create DocSet
@@ -52,7 +66,7 @@ func ExtractDocumentation(opts Options) (*model.DocSet, error) {
 			Modified: now,
 			Generator: &model.Generator{
 				Name:    "opendocs-extractor-go",
-				Version: "0.1.0",
+				Version: "0.2.0",
 			},
 		},
 	}
@@ -64,6 +78,22 @@ func ExtractDocumentation(opts Options) (*model.DocSet, error) {
 		Language: model.LangGo,
 		Version:  opts.ProjectVersion,
 		Items:    []model.DocItem{},
+	}
+
+	// Add repository info if provided
+	if opts.RepoURL != "" {
+		repoType := opts.RepoType
+		if repoType == "" {
+			repoType = "git"
+		}
+
+		repo := model.Repository{
+			Type:            repoType,
+			URL:             opts.RepoURL,
+			FileURLTemplate: opts.FileURLTemplate,
+		}
+
+		project.Repository = &repo
 	}
 
 	// Parse Go packages
@@ -81,9 +111,14 @@ func ExtractDocumentation(opts Options) (*model.DocSet, error) {
 	for pkgName, pkg := range pkgs {
 		docPkg := doc.New(pkg, "./", doc.AllDecls)
 
+		// Create extraction context for this package
+		ctx := extractionContext{
+			packageName: pkgName,
+		}
+
 		// Extract types
 		for _, t := range docPkg.Types {
-			item := extractType(t, fset, absPath)
+			item := extractType(t, fset, absPath, ctx)
 			if item != nil {
 				project.Items = append(project.Items, *item)
 			}
@@ -91,7 +126,7 @@ func ExtractDocumentation(opts Options) (*model.DocSet, error) {
 
 		// Extract functions
 		for _, f := range docPkg.Funcs {
-			item := extractFunc(f, fset, absPath)
+			item := extractFunc(f, fset, absPath, ctx)
 			if item != nil {
 				project.Items = append(project.Items, *item)
 			}
@@ -105,12 +140,32 @@ func ExtractDocumentation(opts Options) (*model.DocSet, error) {
 	return docSet, nil
 }
 
+// buildFQN builds a fully qualified name for a DocItem
+func buildFQN(ctx extractionContext, itemName string) string {
+	if ctx.currentType != "" {
+		return fmt.Sprintf("%s.%s.%s", ctx.packageName, ctx.currentType, itemName)
+	}
+	return fmt.Sprintf("%s.%s", ctx.packageName, itemName)
+}
+
 // extractType extracts a type declaration
-func extractType(t *doc.Type, fset *token.FileSet, basePath string) *model.DocItem {
+func extractType(t *doc.Type, fset *token.FileSet, basePath string, ctx extractionContext) *model.DocItem {
+	fqn := buildFQN(ctx, t.Name)
+
+	// Create a new context for nested items
+	nestedCtx := extractionContext{
+		packageName: ctx.packageName,
+		currentType: t.Name,
+	}
+
 	item := &model.DocItem{
-		ID:       t.Name,
+		ID:       fqn,
 		Name:     t.Name,
 		Kind:     getTypeKind(t),
+		Language: model.LangGo,
+		Relations: model.Relations{
+			"container": ctx.packageName,
+		},
 		DocBlock: extractDocBlock(t.Doc),
 		Items:    []model.DocItem{},
 	}
@@ -122,7 +177,7 @@ func extractType(t *doc.Type, fset *token.FileSet, basePath string) *model.DocIt
 
 	// Extract methods
 	for _, m := range t.Methods {
-		method := extractFunc(m, fset, basePath)
+		method := extractFunc(m, fset, basePath, nestedCtx)
 		if method != nil {
 			method.Kind = model.KindMethod
 			item.Items = append(item.Items, *method)
@@ -131,7 +186,7 @@ func extractType(t *doc.Type, fset *token.FileSet, basePath string) *model.DocIt
 
 	// Extract functions (constructors, etc.)
 	for _, f := range t.Funcs {
-		fn := extractFunc(f, fset, basePath)
+		fn := extractFunc(f, fset, basePath, nestedCtx)
 		if fn != nil {
 			item.Items = append(item.Items, *fn)
 		}
@@ -141,11 +196,17 @@ func extractType(t *doc.Type, fset *token.FileSet, basePath string) *model.DocIt
 }
 
 // extractFunc extracts a function declaration
-func extractFunc(f *doc.Func, fset *token.FileSet, basePath string) *model.DocItem {
+func extractFunc(f *doc.Func, fset *token.FileSet, basePath string, ctx extractionContext) *model.DocItem {
+	fqn := buildFQN(ctx, f.Name)
+
 	item := &model.DocItem{
-		ID:       f.Name,
+		ID:       fqn,
 		Name:     f.Name,
 		Kind:     model.KindFunction,
+		Language: model.LangGo,
+		Relations: model.Relations{
+			"container": ctx.packageName,
+		},
 		DocBlock: extractDocBlock(f.Doc),
 	}
 
@@ -224,8 +285,8 @@ func getLocation(pos token.Pos, fset *token.FileSet, basePath string) *model.Loc
 	relPath, _ := filepath.Rel(basePath, position.Filename)
 
 	return &model.Location{
-		File:   relPath,
-		Line:   position.Line,
+		Path:   relPath,
+		Number: position.Line,
 		Column: position.Column,
 	}
 }

@@ -3,7 +3,9 @@
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
-    "emitDeclarationOnly": false
+    "emitDeclarationOnly": false,
+    "declaration": true,
+    "declarationMap": true
   },
   "include": [
     "src/**/*"
