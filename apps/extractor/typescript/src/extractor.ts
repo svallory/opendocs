@@ -7,7 +7,6 @@ import {
   ItemKind,
   DocBlock,
   DocTag,
-  CommonTags,
 } from '@opendocs/model';
 import * as ts from 'typescript';
 import * as path from 'path';
@@ -128,7 +127,6 @@ function extractClass(
   checker: ts.TypeChecker
 ): DocItem {
   const name = node.name?.text || 'AnonymousClass';
-  const symbol = checker.getSymbolAtLocation(node.name!);
 
   const item: DocItem = {
     id: name,

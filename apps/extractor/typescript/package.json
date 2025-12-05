@@ -27,13 +27,13 @@
   "types": "./lib/index.d.ts",
   "main": "./lib/index.js",
   "dependencies": {
-    "@opendocs/model": "workspace:*",
     "@microsoft/api-extractor": "^7.47.0",
     "@microsoft/api-extractor-model": "^7.28.0",
     "commander": "^12.0.0",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
+    "@opendocs/model": "file:../../../libs/model/typescript",
     "@types/node": "^20.11.16"
   }
 }

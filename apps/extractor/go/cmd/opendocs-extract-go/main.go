@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/svallory/opendocs/apps/opendocs-extractor-go/internal/extractor"
+	"github.com/svallory/opendocs/apps/extractor/go/internal/extractor"
 )
 
 var (

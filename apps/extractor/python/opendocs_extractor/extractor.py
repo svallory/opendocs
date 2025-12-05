@@ -305,12 +305,14 @@ def get_project_version(source_dir: Path) -> Optional[str]:
     pyproject_path = source_dir / "pyproject.toml"
     if pyproject_path.exists():
         try:
-            import tomllib if sys.version_info >= (3, 11) else None
-
-            if tomllib:
+            if sys.version_info >= (3, 11):
+                import tomllib
                 with pyproject_path.open("rb") as f:
                     data = tomllib.load(f)
                     return data.get("project", {}).get("version")
+            else:
+                # For Python < 3.11, skip tomllib
+                pass
         except Exception:
             pass
 
