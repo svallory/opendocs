@@ -38,3 +38,16 @@ node_modules/
 .output/
 .svelte-kit/
 .vercel/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Go
+*.exe
+*.test
+*.out
+/apps/extractor/go/opendocs-extract-go
