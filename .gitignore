@@ -45,9 +45,13 @@ __pycache__/
 *$py.class
 *.so
 .Python
+*.egg-info/
 
 # Go
 *.exe
 *.test
 *.out
 /apps/extractor/go/opendocs-extract-go
+
+# Test outputs
+/sandbox/**/opendocs.json
