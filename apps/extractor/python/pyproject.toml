@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
     "click>=8.0.0",
     "docstring-parser>=0.15",
-    "opendocs-model @ file://../../libs/opendocs-model-python",
+    "opendocs-model @ file://../../../libs/model/python",
 ]
 
 [project.optional-dependencies]

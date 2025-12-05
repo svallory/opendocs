@@ -18,57 +18,52 @@ This monorepo contains OpenDocs extractors for multiple programming languages, e
 
 ## Projects
 
-### Model Library
+### Model Libraries
 
-#### [@opendocs/model](./libs/opendocs-model)
-TypeScript library providing the universal OpenDocs data model and utilities. This is the foundation used by all extractors.
+Universal OpenDocs data models implemented in each language:
 
-**Features:**
+#### [TypeScript](./libs/model/typescript)
+- Type-safe TypeScript definitions with utility functions
 - Five core models: DocSet, Project, DocItem, DocBlock, DocTag
-- Type-safe TypeScript definitions
-- Utility functions for working with OpenDocs data
-- Language-agnostic design
+- `@opendocs/model` package
+
+#### [Go](./libs/model/go)
+- Pure Go types with JSON marshaling
+- Zero external dependencies
+- Constants for ItemKind, TagName, Language
+
+#### [Python](./libs/model/python)
+- TypedDict-based types for full type safety
+- PEP 561 compliant (mypy, pyright, pyre)
+- `opendocs-model` package
 
 ### Extractors
 
-#### [@opendocs/extractor-typescript](./apps/opendocs-extractor-typescript)
-Extracts documentation from TypeScript and JavaScript projects using the TypeScript Compiler API.
+Language-specific documentation extractors:
 
-**Supported:**
-- Classes, interfaces, functions, enums, type aliases
-- JSDoc comments
-- Type annotations and signatures
-- Visibility modifiers
+#### [TypeScript Extractor](./apps/extractor/typescript)
+Extracts from TypeScript/JavaScript using the TypeScript Compiler API.
 
-**Usage:**
+**Supports:** Classes, interfaces, functions, enums, JSDoc comments, type annotations
+
 ```bash
 opendocs-extract-ts extract --config ./tsconfig.json --output ./docs/opendocs.json
 ```
 
-#### [opendocs-extractor-python](./apps/opendocs-extractor-python)
-Extracts documentation from Python projects using Python's AST module.
+#### [Python Extractor](./apps/extractor/python)
+Extracts from Python using AST module and docstring-parser.
 
-**Supported:**
-- Classes, functions, methods
-- Docstrings (Google, NumPy, Sphinx styles)
-- Type annotations
-- Async functions
+**Supports:** Classes, functions, methods, docstrings (Google/NumPy/Sphinx), type annotations
 
-**Usage:**
 ```bash
 opendocs-extract-py extract --source ./src --output ./docs/opendocs.json
 ```
 
-#### [opendocs-extractor-go](./apps/opendocs-extractor-go)
-Extracts documentation from Go projects using Go's built-in AST and doc packages.
+#### [Go Extractor](./apps/extractor/go)
+Extracts from Go using built-in ast/parser/doc packages.
 
-**Supported:**
-- Structs, interfaces, type aliases
-- Functions and methods
-- Go doc comments
-- Exported vs unexported declarations
+**Supports:** Structs, interfaces, functions, methods, Go doc comments
 
-**Usage:**
 ```bash
 opendocs-extract-go extract --source ./pkg --output ./docs/opendocs.json
 ```
@@ -150,15 +145,20 @@ moon run :typecheck
 
 ### Project-Specific Tasks
 
+Moon auto-discovers projects in the new structure:
+
 ```bash
 # Build TypeScript extractor
-moon run opendocs-extractor-typescript:build
+moon run extractor-typescript:build
 
 # Run Python extractor
-moon run opendocs-extractor-python:dev
+moon run extractor-python:dev
 
 # Test Go extractor
-moon run opendocs-extractor-go:test
+moon run extractor-go:test
+
+# Build Go model library
+moon run model-go:build
 ```
 
 ## Architecture
@@ -166,29 +166,39 @@ moon run opendocs-extractor-go:test
 ```
 opendocs/
 ├── libs/
-│   └── opendocs-model/          # Shared TypeScript model library
-│       ├── src/
-│       │   ├── DocSet.ts        # Root documentation set
-│       │   ├── Project.ts       # Project model
-│       │   ├── DocItem.ts       # Universal doc item
-│       │   ├── DocBlock.ts      # Documentation content
-│       │   └── DocTag.ts        # Documentation tags
-│       └── package.json
+│   └── model/                   # OpenDocs model libraries
+│       ├── typescript/          # TypeScript model (@opendocs/model)
+│       │   ├── src/
+│       │   │   ├── DocSet.ts
+│       │   │   ├── Project.ts
+│       │   │   ├── DocItem.ts
+│       │   │   ├── DocBlock.ts
+│       │   │   └── DocTag.ts
+│       │   └── package.json
+│       ├── go/                  # Go model
+│       │   ├── model.go
+│       │   └── go.mod
+│       └── python/              # Python model (opendocs-model)
+│           ├── opendocs_model/
+│           │   ├── __init__.py
+│           │   └── model.py
+│           └── pyproject.toml
 ├── apps/
-│   ├── opendocs-extractor-typescript/  # TypeScript extractor
-│   │   ├── src/
-│   │   │   ├── cli.ts
-│   │   │   └── extractor.ts
-│   │   └── package.json
-│   ├── opendocs-extractor-python/      # Python extractor
-│   │   ├── opendocs_extractor/
-│   │   │   ├── cli.py
-│   │   │   └── extractor.py
-│   │   └── pyproject.toml
-│   └── opendocs-extractor-go/          # Go extractor
-│       ├── cmd/opendocs-extract-go/
-│       ├── internal/extractor/
-│       └── go.mod
+│   └── extractor/               # Language extractors
+│       ├── typescript/          # TypeScript/JavaScript extractor
+│       │   ├── src/
+│       │   │   ├── cli.ts
+│       │   │   └── extractor.ts
+│       │   └── package.json
+│       ├── python/              # Python extractor
+│       │   ├── opendocs_extractor/
+│       │   │   ├── cli.py
+│       │   │   └── extractor.py
+│       │   └── pyproject.toml
+│       └── go/                  # Go extractor
+│           ├── cmd/opendocs-extract-go/
+│           ├── internal/extractor/
+│           └── go.mod
 └── .moon/
     └── workspace.yml
 ```

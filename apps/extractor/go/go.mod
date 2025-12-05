@@ -1,12 +1,12 @@
-module github.com/svallory/opendocs/apps/opendocs-extractor-go
+module github.com/svallory/opendocs/apps/extractor/go
 
 go 1.21
 
-replace github.com/svallory/opendocs/libs/opendocs-model-go => ../../libs/opendocs-model-go
+replace github.com/svallory/opendocs/libs/model/go => ../../../libs/model/go
 
 require (
 	github.com/spf13/cobra v1.8.0
-	github.com/svallory/opendocs/libs/opendocs-model-go v0.0.0
+	github.com/svallory/opendocs/libs/model/go v0.0.0
 	golang.org/x/tools v0.16.0
 )
 

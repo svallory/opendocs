@@ -1,7 +1,7 @@
 {
-  "extends": "../../tsconfig.options.json",
+  "extends": "../../../tsconfig.options.json",
   "compilerOptions": {
-    "outDir": "../../.moon/cache/types/apps/opendocs-extractor-typescript",
+    "outDir": "../../../.moon/cache/types/apps/extractor/typescript",
     "rootDir": "src"
   },
   "include": [
@@ -12,7 +12,7 @@
       "path": "./tsconfig.app.json"
     },
     {
-      "path": "../../libs/opendocs-model"
+      "path": "../../../libs/model/typescript"
     }
   ]
 }

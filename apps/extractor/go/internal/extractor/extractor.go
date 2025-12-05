@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	model "github.com/svallory/opendocs/libs/opendocs-model-go"
+	model "github.com/svallory/opendocs/libs/model/go"
 )
 
 // Options for the extractor
