@@ -4,9 +4,21 @@ import ast
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from docstring_parser import parse as parse_docstring
+from opendocs_model import (
+    DocSet,
+    DocItem,
+    DocBlock,
+    DocTag,
+    Parameter,
+    Location,
+    Language,
+    ItemKind,
+    TagName,
+    VERSION,
+)
 
 
 def extract_documentation(
@@ -14,7 +26,7 @@ def extract_documentation(
     project_name: Optional[str] = None,
     project_id: Optional[str] = None,
     project_version: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> DocSet:
     """
     Extract OpenDocs documentation from a Python project.
 
@@ -25,13 +37,13 @@ def extract_documentation(
         project_version: Optional project version
 
     Returns:
-        Dictionary representing the OpenDocs DocSet
+        DocSet representing the OpenDocs documentation
     """
     # Create DocSet
-    doc_set: Dict[str, Any] = {
+    doc_set: DocSet = {
         "id": project_id or source_dir.name,
         "name": project_name or source_dir.name,
-        "version": "0.1.0",
+        "version": VERSION,
         "format": "json",
         "projects": [],
         "metadata": {
@@ -45,10 +57,10 @@ def extract_documentation(
     }
 
     # Create Project
-    project: Dict[str, Any] = {
+    project: DocSet["projects"][0] = {  # type: ignore
         "id": project_id or source_dir.name,
         "name": project_name or source_dir.name,
-        "language": "python",
+        "language": Language.PYTHON,
         "version": project_version or get_project_version(source_dir),
         "items": [],
     }
@@ -77,14 +89,14 @@ def should_process_file(file_path: Path, source_dir: Path) -> bool:
     return True
 
 
-def extract_from_file(file_path: Path, source_dir: Path) -> List[Dict[str, Any]]:
+def extract_from_file(file_path: Path, source_dir: Path) -> List[DocItem]:
     """Extract documentation items from a Python file."""
     try:
         with file_path.open("r", encoding="utf-8") as f:
             source = f.read()
 
         tree = ast.parse(source, filename=str(file_path))
-        items: List[Dict[str, Any]] = []
+        items: List[DocItem] = []
 
         for node in ast.iter_child_nodes(tree):
             item = extract_from_node(node, file_path, source_dir)
@@ -100,7 +112,7 @@ def extract_from_file(file_path: Path, source_dir: Path) -> List[Dict[str, Any]]
 
 def extract_from_node(
     node: ast.AST, file_path: Path, source_dir: Path
-) -> Optional[Dict[str, Any]]:
+) -> Optional[DocItem]:
     """Extract a DocItem from an AST node."""
     if isinstance(node, ast.ClassDef):
         return extract_class(node, file_path, source_dir)
@@ -111,12 +123,12 @@ def extract_from_node(
     return None
 
 
-def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path) -> Dict[str, Any]:
+def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path) -> DocItem:
     """Extract a class declaration."""
-    item: Dict[str, Any] = {
+    item: DocItem = {
         "id": node.name,
         "name": node.name,
-        "kind": "class",
+        "kind": ItemKind.CLASS,
         "location": get_location(node, file_path, source_dir),
         "items": [],
     }
@@ -131,6 +143,8 @@ def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path) -> Dict
         if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
             method = extract_method(child, file_path, source_dir)
             if method:
+                if "items" not in item:
+                    item["items"] = []
                 item["items"].append(method)
 
     return item
@@ -138,17 +152,17 @@ def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path) -> Dict
 
 def extract_method(
     node: ast.FunctionDef | ast.AsyncFunctionDef, file_path: Path, source_dir: Path
-) -> Dict[str, Any]:
+) -> DocItem:
     """Extract a method declaration."""
     # Determine visibility based on naming convention
     visibility = "private" if node.name.startswith("_") else "public"
 
-    item: Dict[str, Any] = {
+    item: DocItem = {
         "id": node.name,
         "name": node.name,
-        "kind": "constructor" if node.name == "__init__" else "method",
+        "kind": ItemKind.CONSTRUCTOR if node.name == "__init__" else ItemKind.METHOD,
         "location": get_location(node, file_path, source_dir),
-        "visibility": visibility,
+        "visibility": visibility,  # type: ignore
         "signature": {
             "parameters": extract_parameters(node),
         },
@@ -161,6 +175,8 @@ def extract_method(
 
     # Extract return type annotation
     if node.returns:
+        if "signature" not in item:
+            item["signature"] = {}
         item["signature"]["returnType"] = {"name": ast.unparse(node.returns)}
 
     return item
@@ -168,12 +184,12 @@ def extract_method(
 
 def extract_function(
     node: ast.FunctionDef | ast.AsyncFunctionDef, file_path: Path, source_dir: Path
-) -> Dict[str, Any]:
+) -> DocItem:
     """Extract a function declaration."""
-    item: Dict[str, Any] = {
+    item: DocItem = {
         "id": node.name,
         "name": node.name,
-        "kind": "function",
+        "kind": ItemKind.FUNCTION,
         "location": get_location(node, file_path, source_dir),
         "signature": {
             "parameters": extract_parameters(node),
@@ -192,16 +208,16 @@ def extract_function(
     return item
 
 
-def extract_parameters(node: ast.FunctionDef | ast.AsyncFunctionDef) -> List[Dict[str, Any]]:
+def extract_parameters(node: ast.FunctionDef | ast.AsyncFunctionDef) -> List[Parameter]:
     """Extract parameters from a function."""
-    parameters: List[Dict[str, Any]] = []
+    parameters: List[Parameter] = []
 
     for arg in node.args.args:
         # Skip 'self' and 'cls'
         if arg.arg in ("self", "cls"):
             continue
 
-        param: Dict[str, Any] = {
+        param: Parameter = {
             "name": arg.arg,
         }
 
@@ -214,7 +230,7 @@ def extract_parameters(node: ast.FunctionDef | ast.AsyncFunctionDef) -> List[Dic
     return parameters
 
 
-def extract_docblock(node: ast.AST) -> Optional[Dict[str, Any]]:
+def extract_docblock(node: ast.AST) -> Optional[DocBlock]:
     """Extract docstring as a DocBlock."""
     docstring = ast.get_docstring(node)
     if not docstring:
@@ -223,7 +239,7 @@ def extract_docblock(node: ast.AST) -> Optional[Dict[str, Any]]:
     # Parse docstring
     parsed = parse_docstring(docstring)
 
-    docblock: Dict[str, Any] = {}
+    docblock: DocBlock = {}
 
     # Description
     if parsed.short_description or parsed.long_description:
@@ -235,12 +251,12 @@ def extract_docblock(node: ast.AST) -> Optional[Dict[str, Any]]:
         docblock["description"] = "\n\n".join(description_parts)
 
     # Tags
-    tags: List[Dict[str, Any]] = []
+    tags: List[DocTag] = []
 
     # Parameters
     for param in parsed.params:
-        tag: Dict[str, Any] = {
-            "tag": "param",
+        tag: DocTag = {
+            "tag": TagName.PARAM,
             "name": param.arg_name,
         }
         if param.type_name:
@@ -251,7 +267,7 @@ def extract_docblock(node: ast.AST) -> Optional[Dict[str, Any]]:
 
     # Returns
     if parsed.returns:
-        tag: Dict[str, Any] = {"tag": "returns"}
+        tag: DocTag = {"tag": TagName.RETURNS}
         if parsed.returns.type_name:
             tag["type"] = parsed.returns.type_name
         if parsed.returns.description:
@@ -260,8 +276,8 @@ def extract_docblock(node: ast.AST) -> Optional[Dict[str, Any]]:
 
     # Raises
     for raises in parsed.raises:
-        tag: Dict[str, Any] = {
-            "tag": "throws",
+        tag: DocTag = {
+            "tag": TagName.THROWS,
             "name": raises.type_name,
         }
         if raises.description:
@@ -274,7 +290,7 @@ def extract_docblock(node: ast.AST) -> Optional[Dict[str, Any]]:
     return docblock if docblock else None
 
 
-def get_location(node: ast.AST, file_path: Path, source_dir: Path) -> Dict[str, Any]:
+def get_location(node: ast.AST, file_path: Path, source_dir: Path) -> Location:
     """Get source location for a node."""
     return {
         "file": str(file_path.relative_to(source_dir)),

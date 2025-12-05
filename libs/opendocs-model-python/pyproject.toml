@@ -3,16 +3,16 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "opendocs-extractor-python"
+name = "opendocs-model"
 version = "0.1.0"
-description = "OpenDocs extractor for Python projects"
+description = "Python types for the OpenDocs universal documentation format"
 readme = "README.md"
 authors = [
     { name = "Saulo Vallory", email = "your.email@example.com" }
 ]
 license = { text = "MIT" }
 requires-python = ">=3.8"
-keywords = ["opendocs", "documentation", "python", "extractor", "ast"]
+keywords = ["opendocs", "documentation", "model", "types"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -23,12 +23,11 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
 ]
 
 dependencies = [
-    "click>=8.0.0",
-    "docstring-parser>=0.15",
-    "opendocs-model @ file://../../libs/opendocs-model-python",
+    "typing-extensions>=4.0.0; python_version<'3.11'",
 ]
 
 [project.optional-dependencies]
@@ -38,16 +37,13 @@ dev = [
     "mypy>=1.0.0",
 ]
 
-[project.scripts]
-opendocs-extract-py = "opendocs_extractor.cli:main"
-
 [project.urls]
 Homepage = "https://github.com/svallory/opendocs"
 Repository = "https://github.com/svallory/opendocs"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["opendocs_extractor*"]
+include = ["opendocs_model*"]
 
 [tool.black]
 line-length = 100

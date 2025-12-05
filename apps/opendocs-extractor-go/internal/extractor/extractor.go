@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	model "github.com/svallory/opendocs/libs/opendocs-model-go"
 )
 
 // Options for the extractor
@@ -20,91 +22,8 @@ type Options struct {
 	ProjectVersion string
 }
 
-// DocSet represents the root OpenDocs structure
-type DocSet struct {
-	ID       string     `json:"id"`
-	Name     string     `json:"name"`
-	Version  string     `json:"version"`
-	Format   string     `json:"format"`
-	Projects []Project  `json:"projects"`
-	Metadata *Metadata  `json:"metadata,omitempty"`
-}
-
-// Metadata for the DocSet
-type Metadata struct {
-	Created   string     `json:"created,omitempty"`
-	Modified  string     `json:"modified,omitempty"`
-	Generator *Generator `json:"generator,omitempty"`
-}
-
-// Generator information
-type Generator struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-}
-
-// Project represents a single project
-type Project struct {
-	ID       string    `json:"id"`
-	Name     string    `json:"name"`
-	Language string    `json:"language"`
-	Version  string    `json:"version,omitempty"`
-	Items    []DocItem `json:"items,omitempty"`
-}
-
-// DocItem represents a documentation item
-type DocItem struct {
-	ID         string     `json:"id"`
-	Name       string     `json:"name"`
-	Kind       string     `json:"kind"`
-	Location   *Location  `json:"location,omitempty"`
-	Visibility string     `json:"visibility,omitempty"`
-	DocBlock   *DocBlock  `json:"docBlock,omitempty"`
-	Signature  *Signature `json:"signature,omitempty"`
-	Items      []DocItem  `json:"items,omitempty"`
-}
-
-// Location represents source location
-type Location struct {
-	File   string `json:"file"`
-	Line   int    `json:"line"`
-	Column int    `json:"column"`
-}
-
-// DocBlock represents documentation content
-type DocBlock struct {
-	Description string   `json:"description,omitempty"`
-	Remarks     string   `json:"remarks,omitempty"`
-	Tags        []DocTag `json:"tags,omitempty"`
-}
-
-// DocTag represents a documentation tag
-type DocTag struct {
-	Tag     string `json:"tag"`
-	Name    string `json:"name,omitempty"`
-	Type    string `json:"type,omitempty"`
-	Content string `json:"content,omitempty"`
-}
-
-// Signature represents a function/method signature
-type Signature struct {
-	Parameters []Parameter    `json:"parameters,omitempty"`
-	ReturnType *TypeReference `json:"returnType,omitempty"`
-}
-
-// Parameter represents a function parameter
-type Parameter struct {
-	Name string         `json:"name"`
-	Type *TypeReference `json:"type,omitempty"`
-}
-
-// TypeReference represents a type
-type TypeReference struct {
-	Name string `json:"name"`
-}
-
 // ExtractDocumentation extracts OpenDocs from a Go project
-func ExtractDocumentation(opts Options) (*DocSet, error) {
+func ExtractDocumentation(opts Options) (*model.DocSet, error) {
 	// Get absolute path
 	absPath, err := filepath.Abs(opts.SourcePath)
 	if err != nil {
@@ -123,15 +42,15 @@ func ExtractDocumentation(opts Options) (*DocSet, error) {
 
 	// Create DocSet
 	now := time.Now().Format(time.RFC3339)
-	docSet := &DocSet{
+	docSet := &model.DocSet{
 		ID:      projectID,
 		Name:    projectName,
-		Version: "0.1.0",
+		Version: model.Version,
 		Format:  "json",
-		Metadata: &Metadata{
+		Metadata: &model.Metadata{
 			Created:  now,
 			Modified: now,
-			Generator: &Generator{
+			Generator: &model.Generator{
 				Name:    "opendocs-extractor-go",
 				Version: "0.1.0",
 			},
@@ -139,12 +58,12 @@ func ExtractDocumentation(opts Options) (*DocSet, error) {
 	}
 
 	// Create Project
-	project := Project{
+	project := model.Project{
 		ID:       projectID,
 		Name:     projectName,
-		Language: "go",
+		Language: model.LangGo,
 		Version:  opts.ProjectVersion,
-		Items:    []DocItem{},
+		Items:    []model.DocItem{},
 	}
 
 	// Parse Go packages
@@ -187,13 +106,13 @@ func ExtractDocumentation(opts Options) (*DocSet, error) {
 }
 
 // extractType extracts a type declaration
-func extractType(t *doc.Type, fset *token.FileSet, basePath string) *DocItem {
-	item := &DocItem{
+func extractType(t *doc.Type, fset *token.FileSet, basePath string) *model.DocItem {
+	item := &model.DocItem{
 		ID:       t.Name,
 		Name:     t.Name,
 		Kind:     getTypeKind(t),
 		DocBlock: extractDocBlock(t.Doc),
-		Items:    []DocItem{},
+		Items:    []model.DocItem{},
 	}
 
 	// Extract location
@@ -205,7 +124,7 @@ func extractType(t *doc.Type, fset *token.FileSet, basePath string) *DocItem {
 	for _, m := range t.Methods {
 		method := extractFunc(m, fset, basePath)
 		if method != nil {
-			method.Kind = "method"
+			method.Kind = model.KindMethod
 			item.Items = append(item.Items, *method)
 		}
 	}
@@ -222,11 +141,11 @@ func extractType(t *doc.Type, fset *token.FileSet, basePath string) *DocItem {
 }
 
 // extractFunc extracts a function declaration
-func extractFunc(f *doc.Func, fset *token.FileSet, basePath string) *DocItem {
-	item := &DocItem{
+func extractFunc(f *doc.Func, fset *token.FileSet, basePath string) *model.DocItem {
+	item := &model.DocItem{
 		ID:       f.Name,
 		Name:     f.Name,
-		Kind:     "function",
+		Kind:     model.KindFunction,
 		DocBlock: extractDocBlock(f.Doc),
 	}
 
@@ -251,20 +170,20 @@ func extractFunc(f *doc.Func, fset *token.FileSet, basePath string) *DocItem {
 }
 
 // extractSignature extracts function signature
-func extractSignature(funcType *ast.FuncType) *Signature {
-	sig := &Signature{
-		Parameters: []Parameter{},
+func extractSignature(funcType *ast.FuncType) *model.Signature {
+	sig := &model.Signature{
+		Parameters: []model.Parameter{},
 	}
 
 	// Extract parameters
 	if funcType.Params != nil {
 		for _, field := range funcType.Params.List {
 			for _, name := range field.Names {
-				param := Parameter{
+				param := model.Parameter{
 					Name: name.Name,
 				}
 				if field.Type != nil {
-					param.Type = &TypeReference{
+					param.Type = &model.TypeReference{
 						Name: formatType(field.Type),
 					}
 				}
@@ -279,7 +198,7 @@ func extractSignature(funcType *ast.FuncType) *Signature {
 		// In real implementation, handle multiple return values
 		result := funcType.Results.List[0]
 		if result.Type != nil {
-			sig.ReturnType = &TypeReference{
+			sig.ReturnType = &model.TypeReference{
 				Name: formatType(result.Type),
 			}
 		}
@@ -289,22 +208,22 @@ func extractSignature(funcType *ast.FuncType) *Signature {
 }
 
 // extractDocBlock creates a DocBlock from doc comments
-func extractDocBlock(docText string) *DocBlock {
+func extractDocBlock(docText string) *model.DocBlock {
 	if docText == "" {
 		return nil
 	}
 
-	return &DocBlock{
+	return &model.DocBlock{
 		Description: strings.TrimSpace(docText),
 	}
 }
 
 // getLocation gets source location
-func getLocation(pos token.Pos, fset *token.FileSet, basePath string) *Location {
+func getLocation(pos token.Pos, fset *token.FileSet, basePath string) *model.Location {
 	position := fset.Position(pos)
 	relPath, _ := filepath.Rel(basePath, position.Filename)
 
-	return &Location{
+	return &model.Location{
 		File:   relPath,
 		Line:   position.Line,
 		Column: position.Column,
@@ -321,11 +240,11 @@ func getTypeKind(t *doc.Type) string {
 		if typeSpec, ok := spec.(*ast.TypeSpec); ok {
 			switch typeSpec.Type.(type) {
 			case *ast.StructType:
-				return "struct"
+				return model.KindStruct
 			case *ast.InterfaceType:
-				return "interface"
+				return model.KindInterface
 			default:
-				return "typeAlias"
+				return model.KindTypeAlias
 			}
 		}
 	}

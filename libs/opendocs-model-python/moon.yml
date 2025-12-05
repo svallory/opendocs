@@ -1,0 +1,14 @@
+type: 'library'
+language: 'python'
+
+tasks:
+  build:
+    command: 'python -m build'
+    outputs:
+      - 'dist'
+
+  test:
+    command: 'pytest'
+    inputs:
+      - 'opendocs_model/**/*.py'
+      - 'tests/**/*.py'
