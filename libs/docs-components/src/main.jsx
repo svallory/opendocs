@@ -2,6 +2,12 @@ import React, { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReactFlow } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import './styles/model-diagram.css'
+import { ModelDiagram } from './components/ModelDiagram'
+
+// ============================================
+// Legacy Demo Diagram (diagram-root)
+// ============================================
 
 const initialNodes = [
   { id: '1', position: { x: 0, y: 0 }, data: { label: 'Node 1' } },
@@ -14,7 +20,7 @@ const initialEdges = [
   { id: 'e2-3', source: '2', target: '3' },
 ]
 
-function Flow() {
+function DemoFlow() {
   const [nodes] = useState(initialNodes)
   const [edges] = useState(initialEdges)
 
@@ -27,16 +33,28 @@ function Flow() {
   )
 }
 
-let root = null
+// ============================================
+// Render Functions
+// ============================================
 
-function renderDiagram() {
-  const container = document.getElementById('diagram-root')
-  if (!container) return
+const roots = {}
+const containers = {}
 
-  // Skip if already rendered
-  if (root) return
+function renderDemoFlow(container) {
+  // Check if already rendered to this specific container
+  if (roots['demo'] && containers['demo'] === container && container.hasChildNodes()) {
+    return
+  }
 
-  // Ensure container has dimensions
+  // Clean up old root if container changed
+  if (roots['demo'] && containers['demo'] !== container) {
+    try {
+      roots['demo'].unmount()
+    } catch (e) {
+      // Ignore unmount errors
+    }
+  }
+
   if (!container.style.height) {
     container.style.height = '600px'
   }
@@ -44,19 +62,64 @@ function renderDiagram() {
     container.style.width = '100%'
   }
 
-  root = createRoot(container)
-  root.render(<Flow />)
+  containers['demo'] = container
+  roots['demo'] = createRoot(container)
+  roots['demo'].render(<DemoFlow />)
+}
+
+function renderModelDiagram(container) {
+  // Check if already rendered to this specific container
+  if (roots['model'] && containers['model'] === container && container.hasChildNodes()) {
+    return
+  }
+
+  // Clean up old root if container changed
+  if (roots['model'] && containers['model'] !== container) {
+    try {
+      roots['model'].unmount()
+    } catch (e) {
+      // Ignore unmount errors
+    }
+  }
+
+  if (!container.style.height) {
+    container.style.height = '600px'
+  }
+  if (!container.style.width) {
+    container.style.width = '100%'
+  }
+
+  // Get options from data attributes
+  const variant = container.dataset.variant || 'full'
+  const showKind = container.dataset.showKind === 'true'
+
+  containers['model'] = container
+  roots['model'] = createRoot(container)
+  roots['model'].render(<ModelDiagram variant={variant} showKind={showKind} />)
+}
+
+function renderAll() {
+  // Check for legacy demo diagram
+  const demoContainer = document.getElementById('diagram-root')
+  if (demoContainer) {
+    renderDemoFlow(demoContainer)
+  }
+
+  // Check for model diagram
+  const modelContainer = document.getElementById('model-diagram-root')
+  if (modelContainer) {
+    renderModelDiagram(modelContainer)
+  }
 }
 
 // Wait for Next.js hydration to complete before rendering
 function waitAndRender() {
-  // Use requestIdleCallback or setTimeout to wait for hydration
   if (typeof requestIdleCallback !== 'undefined') {
     requestIdleCallback(() => {
-      setTimeout(renderDiagram, 100)
+      setTimeout(renderAll, 100)
     })
   } else {
-    setTimeout(renderDiagram, 500)
+    setTimeout(renderAll, 500)
   }
 }
 
@@ -66,3 +129,27 @@ if (document.readyState === 'loading') {
 } else {
   waitAndRender()
 }
+
+// Watch for DOM changes (e.g., theme switches that re-render the page)
+const observer = new MutationObserver((mutations) => {
+  // Check if our containers were re-added or emptied
+  const modelContainer = document.getElementById('model-diagram-root')
+  const demoContainer = document.getElementById('diagram-root')
+
+  if (modelContainer && !modelContainer.hasChildNodes()) {
+    setTimeout(() => renderModelDiagram(modelContainer), 100)
+  }
+  if (demoContainer && !demoContainer.hasChildNodes()) {
+    setTimeout(() => renderDemoFlow(demoContainer), 100)
+  }
+})
+
+// Observe the document body for changes
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
+})
+
+// Export for external use
+export { ModelDiagram }
+export { fireModelSelectEvent, onModelSelect } from './utils/events'

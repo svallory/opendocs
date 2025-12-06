@@ -1,0 +1,189 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Martian+Mono:wght@100..800&family=Trocchi&display=swap');
+
+/* CSS Variables for class colors */
+:root {
+  --model-color-project: #6b1ee7;
+  --model-color-docitem: #f50e7a;
+  --model-color-docblock: #0cae7d;
+  --model-color-tag: #e79e40;
+
+  --model-bg-project: #ede5f9;
+  --model-bg-docitem: #fde5ef;
+  --model-bg-docblock: #e5f5ef;
+  --model-bg-tag: #fdf3e5;
+
+  --model-font-class: 'Trocchi', serif;
+  --model-font-property: 'Martian Mono', monospace;
+}
+
+/* Class Node Container */
+.class-node {
+  min-width: 260px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.class-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Class Header */
+.class-node__header {
+  padding: 12px 16px;
+  color: white;
+}
+
+.class-node__label {
+  font-family: var(--model-font-property);
+  font-size: 11px;
+  font-weight: 300;
+  opacity: 0.9;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.class-node__name {
+  font-family: var(--model-font-class);
+  font-size: 22px;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* Class Body (Properties) */
+.class-node__body {
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 0 8px 8px 8px;
+  background-color: white;
+}
+
+/* Property Row */
+.property-row {
+  display: flex;
+  align-items: baseline;
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.property-row:last-child {
+  border-bottom: none;
+}
+
+.property-row:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.property-row--selected {
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+}
+
+.property-name {
+  font-family: var(--model-font-property);
+  font-size: 14px;
+  font-weight: 400;
+  color: #1a1a1a;
+}
+
+.property-separator {
+  font-family: var(--model-font-property);
+  font-size: 14px;
+  color: #666;
+  margin: 0 6px;
+}
+
+.property-type {
+  font-family: var(--model-font-property);
+  font-size: 14px;
+  font-weight: 300;
+  color: #0cae7d; /* Consistent green color for all types */
+}
+
+.property-optional {
+  opacity: 0.7;
+}
+
+/* ReactFlow handle customization */
+.class-node .react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: #666;
+  border: 2px solid white;
+}
+
+.class-node .react-flow__handle-top {
+  top: -4px;
+}
+
+.class-node .react-flow__handle-bottom {
+  bottom: -4px;
+}
+
+.class-node .react-flow__handle-left {
+  left: -4px;
+}
+
+.class-node .react-flow__handle-right {
+  right: -4px;
+}
+
+/* Model Diagram Container */
+.model-diagram {
+  width: 100%;
+  height: 100%;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+/* Dark mode support - Mintlify uses .dark class on html */
+.dark .model-diagram,
+html.dark .model-diagram {
+  background: #1a1a1a;
+}
+
+.dark .class-node__body,
+html.dark .class-node__body {
+  background-color: rgba(17, 17, 17, 0.9);
+}
+
+.dark .property-name,
+html.dark .property-name {
+  color: #e5e5e5;
+}
+
+.dark .property-separator,
+html.dark .property-separator {
+  color: #999;
+}
+
+.dark .property-row:hover,
+html.dark .property-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .property-row,
+html.dark .property-row {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Simple variant adjustments */
+.model-diagram--simple .class-node {
+  min-width: 240px;
+}
+
+.model-diagram--simple .class-node__name {
+  font-size: 20px;
+}
+
+.model-diagram--simple .property-name,
+.model-diagram--simple .property-type {
+  font-size: 13px;
+}
