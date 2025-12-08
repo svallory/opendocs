@@ -74,9 +74,14 @@ export interface DocItem {
   docBlock?: DocBlock;
 
   /**
+   * Parent item ID (for establishing hierarchy)
+   */
+  parentId?: string;
+
+  /**
    * Child items (methods, properties, nested types, etc.)
    */
-  items?: DocItem[];
+  children?: DocItem[];
 
   /**
    * Language-specific metadata
@@ -290,14 +295,14 @@ export class DocItemUtils {
    * Find a child item by name
    */
   static findChildByName(item: DocItem, name: string): DocItem | undefined {
-    return item.items?.find(child => child.name === name);
+    return item.children?.find(child => child.name === name);
   }
 
   /**
    * Find all children of a specific kind
    */
   static findChildrenByKind(item: DocItem, kind: string): DocItem[] {
-    return item.items?.filter(child => child.kind === kind) ?? [];
+    return item.children?.filter(child => child.kind === kind) ?? [];
   }
 
   /**
@@ -306,7 +311,7 @@ export class DocItemUtils {
    */
   static getPublicMembers(item: DocItem): DocItem[] {
     return (
-      item.items?.filter(
+      item.children?.filter(
         child => (child.metadata as any)?.visibility === 'public' || (child.metadata as any)?.visibility === undefined
       ) ?? []
     );

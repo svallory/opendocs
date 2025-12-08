@@ -10,7 +10,7 @@ export interface DocBlock {
   /**
    * Main description/summary of the documented element
    */
-  description?: string;
+  content?: string;
 
   /**
    * Extended remarks or detailed description
