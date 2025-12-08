@@ -4,14 +4,1277 @@ sidebarTitle: Examples
 description: Real-world examples of OpenDocs integration
 ---
 
-## Coming Soon
+## Overview
 
-This page will showcase:
-- Mintlify integration example
-- Astro integration example
-- Docusaurus plugin example
-- Custom static site generator
+This page showcases practical examples of integrating OpenDocs with popular documentation platforms and frameworks. Each example demonstrates a complete working implementation with code snippets and explanations.
 
-<Card title="Back to Documenters" icon="arrow-left" href="/building/documenters/overview">
-  Documenter overview
-</Card>
+## Mintlify Plugin
+
+Mintlify is a modern documentation platform. This example shows how to create a plugin that reads `opendocs.json` and generates API reference pages.
+
+### Project Structure
+
+```
+mintlify-opendocs/
+├── plugin/
+│   ├── index.ts         # Plugin entry point
+│   ├── loader.ts        # Load and parse opendocs.json
+│   └── generator.ts     # Generate MDX files
+├── components/
+│   ├── APIReference.tsx # API reference component
+│   └── MethodCard.tsx   # Individual method display
+└── mint.json           # Mintlify configuration
+```
+
+### Plugin Implementation
+
+```typescript
+// plugin/index.ts
+import { DocSet, Project, DocItem } from '@opendocs/model';
+import fs from 'fs/promises';
+import path from 'path';
+
+interface OpenDocsPluginConfig {
+  input: string;        // Path to opendocs.json
+  output: string;       // Output directory for MDX files
+  urlPrefix?: string;   // URL prefix for generated pages
+}
+
+export class OpenDocsPlugin {
+  constructor(private config: OpenDocsPluginConfig) {}
+
+  async generate(): Promise<void> {
+    // Load documentation
+    const docSet = await this.loadDocSet();
+
+    // Generate MDX files for each project
+    for (const project of docSet.projects) {
+      await this.generateProject(project);
+    }
+
+    // Update mint.json navigation
+    await this.updateMintConfig(docSet);
+  }
+
+  private async loadDocSet(): Promise<DocSet> {
+    const content = await fs.readFile(this.config.input, 'utf-8');
+    return JSON.parse(content) as DocSet;
+  }
+
+  private async generateProject(project: Project): Promise<void> {
+    const projectDir = path.join(this.config.output, project.id);
+    await fs.mkdir(projectDir, { recursive: true });
+
+    // Generate index page
+    const indexMdx = this.generateProjectIndex(project);
+    await fs.writeFile(path.join(projectDir, 'index.mdx'), indexMdx);
+
+    // Generate page for each top-level item
+    for (const item of project.items || []) {
+      const itemMdx = this.generateItemPage(item, project);
+      const filename = `${this.sanitizeFilename(item.id)}.mdx`;
+      await fs.writeFile(path.join(projectDir, filename), itemMdx);
+    }
+  }
+
+  private generateProjectIndex(project: Project): string {
+    return `---
+title: ${project.name} API Reference
+description: API documentation for ${project.name} v${project.version}
+---
+
+import { APIReference } from '@/components/APIReference';
+
+<APIReference project={${JSON.stringify(project, null, 2)}} />
+
+## Overview
+
+${project.description || `API reference for ${project.name}`}
+
+## Available APIs
+
+${(project.items || []).map(item => `
+- [${item.name}](/${this.config.urlPrefix}/${project.id}/${this.sanitizeFilename(item.id)}) - ${item.docBlock?.content?.split('\n')[0] || ''}
+`).join('\n')}
+`;
+  }
+
+  private generateItemPage(item: DocItem, project: Project): string {
+    const breadcrumb = this.buildBreadcrumb(item, project);
+
+    return `---
+title: ${item.name}
+description: ${item.docBlock?.content?.split('\n')[0] || ''}
+---
+
+${breadcrumb}
+
+## ${item.name}
+
+\`\`\`${project.language}
+${this.formatSignature(item, project.language)}
+\`\`\`
+
+${item.docBlock?.content || ''}
+
+${this.renderParameters(item)}
+
+${this.renderReturns(item)}
+
+${this.renderExamples(item)}
+
+${this.renderChildren(item, project.language)}
+
+${this.renderRelations(item)}
+`;
+  }
+
+  private formatSignature(item: DocItem, language: string): string {
+    const sig = item.metadata?.signature;
+    if (!sig) return item.name;
+
+    switch (language) {
+      case 'typescript':
+        const params = sig.parameters
+          ?.map(p => `${p.name}: ${p.type?.name || 'any'}`)
+          .join(', ') || '';
+        return `${item.kind} ${item.name}(${params}): ${sig.returnType?.name || 'void'}`;
+
+      case 'python':
+        const pyParams = sig.parameters
+          ?.map(p => `${p.name}${p.type?.name ? `: ${p.type.name}` : ''}`)
+          .join(', ') || '';
+        const returnType = sig.returnType?.name ? ` -> ${sig.returnType.name}` : '';
+        return `def ${item.name}(${pyParams})${returnType}:`;
+
+      case 'go':
+        const receiver = item.metadata?.receiver ? `(${item.metadata.receiver}) ` : '';
+        const goParams = sig.parameters
+          ?.map(p => `${p.name} ${p.type?.name || 'interface{}'}`)
+          .join(', ') || '';
+        return `func ${receiver}${item.name}(${goParams}) ${sig.returnType?.name || ''}`;
+
+      default:
+        return item.name;
+    }
+  }
+
+  private renderParameters(item: DocItem): string {
+    const params = item.docBlock?.tags?.param;
+    if (!params || params.length === 0) return '';
+
+    return `
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+${params.map(p => {
+  const name = p.parameters?.name || '';
+  const type = item.metadata?.signature?.parameters?.find(sp => sp.name === name)?.type?.name || 'any';
+  return `| \`${name}\` | \`${type}\` | ${p.content || ''} |`;
+}).join('\n')}
+`;
+  }
+
+  private renderReturns(item: DocItem): string {
+    const returns = item.docBlock?.tags?.returns;
+    if (!returns || returns.length === 0) return '';
+
+    const returnType = item.metadata?.signature?.returnType?.name || 'void';
+
+    return `
+### Returns
+
+\`${returnType}\`
+
+${returns[0]}
+`;
+  }
+
+  private renderExamples(item: DocItem): string {
+    const examples = item.docBlock?.tags?.example;
+    if (!examples || examples.length === 0) return '';
+
+    return `
+### Examples
+
+${examples.map(ex => `
+${ex}
+`).join('\n')}
+`;
+  }
+
+  private renderChildren(item: DocItem, language: string): string {
+    if (!item.children || item.children.length === 0) return '';
+
+    return `
+### Members
+
+${item.children.map(child => `
+#### ${child.name}
+
+\`\`\`${language}
+${this.formatSignature(child, language)}
+\`\`\`
+
+${child.docBlock?.content || ''}
+`).join('\n')}
+`;
+  }
+
+  private renderRelations(item: DocItem): string {
+    if (!item.relations) return '';
+
+    const parts: string[] = [];
+
+    if (item.relations.extends) {
+      const refs = Array.isArray(item.relations.extends)
+        ? item.relations.extends
+        : [item.relations.extends];
+      parts.push(`**Extends:** ${refs.map(r => `\`${typeof r === 'string' ? r : r.target}\``).join(', ')}`);
+    }
+
+    if (item.relations.implements) {
+      const refs = Array.isArray(item.relations.implements)
+        ? item.relations.implements
+        : [item.relations.implements];
+      parts.push(`**Implements:** ${refs.map(r => `\`${typeof r === 'string' ? r : r.target}\``).join(', ')}`);
+    }
+
+    return parts.length > 0 ? `\n### Relations\n\n${parts.join('\n\n')}` : '';
+  }
+
+  private buildBreadcrumb(item: DocItem, project: Project): string {
+    const crumbs = [project.name, item.name];
+    return `<Breadcrumb items={${JSON.stringify(crumbs)}} />`;
+  }
+
+  private sanitizeFilename(id: string): string {
+    return id.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+  }
+
+  private async updateMintConfig(docSet: DocSet): Promise<void> {
+    const mintConfigPath = 'mint.json';
+    const config = JSON.parse(await fs.readFile(mintConfigPath, 'utf-8'));
+
+    // Add API reference navigation
+    config.navigation = config.navigation || [];
+    config.navigation.push({
+      group: 'API Reference',
+      pages: docSet.projects.map(project => ({
+        group: project.name,
+        pages: [
+          `${this.config.urlPrefix}/${project.id}/index`,
+          ...(project.items || []).map(item =>
+            `${this.config.urlPrefix}/${project.id}/${this.sanitizeFilename(item.id)}`
+          ),
+        ],
+      })),
+    });
+
+    await fs.writeFile(mintConfigPath, JSON.stringify(config, null, 2));
+  }
+}
+
+// Usage
+const plugin = new OpenDocsPlugin({
+  input: './opendocs.json',
+  output: './docs/api',
+  urlPrefix: 'api',
+});
+
+await plugin.generate();
+```
+
+### Custom APIReference Component
+
+```typescript
+// components/APIReference.tsx
+import { Project, DocItem } from '@opendocs/model';
+
+interface APIReferenceProps {
+  project: Project;
+}
+
+export function APIReference({ project }: APIReferenceProps) {
+  // Group items by kind
+  const groups = (project.items || []).reduce((acc, item) => {
+    const kind = item.kind;
+    if (!acc[kind]) acc[kind] = [];
+    acc[kind].push(item);
+    return acc;
+  }, {} as Record<string, DocItem[]>);
+
+  return (
+    <div className="api-reference">
+      {Object.entries(groups).map(([kind, items]) => (
+        <div key={kind} className="api-group">
+          <h2>{pluralize(kind)}</h2>
+          <div className="api-items">
+            {items.map(item => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className="api-item-card"
+              >
+                <h3>{item.name}</h3>
+                <p>{item.docBlock?.content?.split('\n')[0]}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function pluralize(word: string): string {
+  if (word.endsWith('s')) return word;
+  return `${word}s`;
+}
+```
+
+## Astro Integration
+
+Astro is a modern web framework. This example shows how to integrate OpenDocs using Astro's content collections.
+
+### Integration Setup
+
+```typescript
+// integrations/opendocs.ts
+import type { AstroIntegration } from 'astro';
+import { DocSet } from '@opendocs/model';
+import fs from 'fs/promises';
+
+export default function openDocsIntegration(config: {
+  docSets: string[];
+}): AstroIntegration {
+  return {
+    name: 'opendocs',
+    hooks: {
+      'astro:config:setup': async ({ updateConfig, injectScript }) => {
+        // Load all DocSets
+        const docSets: DocSet[] = [];
+        for (const path of config.docSets) {
+          const content = await fs.readFile(path, 'utf-8');
+          docSets.push(JSON.parse(content));
+        }
+
+        // Make available to Astro
+        updateConfig({
+          vite: {
+            plugins: [
+              {
+                name: 'opendocs-virtual',
+                resolveId(id) {
+                  if (id === 'virtual:opendocs') {
+                    return '\0virtual:opendocs';
+                  }
+                },
+                load(id) {
+                  if (id === '\0virtual:opendocs') {
+                    return `export const docSets = ${JSON.stringify(docSets)};`;
+                  }
+                },
+              },
+            ],
+          },
+        });
+      },
+    },
+  };
+}
+```
+
+### Astro Configuration
+
+```javascript
+// astro.config.mjs
+import { defineConfig } from 'astro/config';
+import openDocs from './integrations/opendocs';
+
+export default defineConfig({
+  integrations: [
+    openDocs({
+      docSets: ['./opendocs.json'],
+    }),
+  ],
+});
+```
+
+### Dynamic Route for API Pages
+
+```astro
+---
+// src/pages/api/[project]/[item].astro
+import { docSets } from 'virtual:opendocs';
+import type { DocSet, Project, DocItem } from '@opendocs/model';
+
+export async function getStaticPaths() {
+  const paths: any[] = [];
+
+  for (const docSet of docSets) {
+    for (const project of docSet.projects) {
+      for (const item of project.items || []) {
+        paths.push({
+          params: {
+            project: project.id,
+            item: sanitizeId(item.id),
+          },
+          props: {
+            docSet,
+            project,
+            item,
+          },
+        });
+      }
+    }
+  }
+
+  return paths;
+}
+
+const { docSet, project, item } = Astro.props;
+
+function sanitizeId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+}
+
+function formatSignature(item: DocItem): string {
+  const sig = item.metadata?.signature;
+  if (!sig) return item.name;
+
+  const params = sig.parameters
+    ?.map(p => `${p.name}: ${p.type?.name || 'any'}`)
+    .join(', ') || '';
+
+  return `${item.kind} ${item.name}(${params}): ${sig.returnType?.name || 'void'}`;
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{item.name} - {project.name}</title>
+    <meta name="description" content={item.docBlock?.content?.split('\n')[0]} />
+  </head>
+  <body>
+    <nav>
+      <a href="/">Home</a> /
+      <a href={`/api/${project.id}`}>{project.name}</a> /
+      {item.name}
+    </nav>
+
+    <main>
+      <h1>{item.name}</h1>
+
+      <pre><code class={`language-${project.language}`}>{formatSignature(item)}</code></pre>
+
+      <div class="description">
+        {item.docBlock?.content}
+      </div>
+
+      {item.docBlock?.tags?.param && (
+        <section>
+          <h2>Parameters</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {item.docBlock.tags.param.map(p => (
+                <tr>
+                  <td><code>{p.parameters?.name}</code></td>
+                  <td><code>{item.metadata?.signature?.parameters?.find(sp => sp.name === p.parameters?.name)?.type?.name || 'any'}</code></td>
+                  <td>{p.content}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {item.docBlock?.tags?.returns && (
+        <section>
+          <h2>Returns</h2>
+          <p><code>{item.metadata?.signature?.returnType?.name || 'void'}</code></p>
+          <p>{item.docBlock.tags.returns[0]}</p>
+        </section>
+      )}
+
+      {item.children && item.children.length > 0 && (
+        <section>
+          <h2>Members</h2>
+          {item.children.map(child => (
+            <article id={child.id}>
+              <h3>{child.name}</h3>
+              <pre><code class={`language-${project.language}`}>{formatSignature(child)}</code></pre>
+              <p>{child.docBlock?.content}</p>
+            </article>
+          ))}
+        </section>
+      )}
+    </main>
+  </body>
+</html>
+
+<style>
+  body {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    font-family: system-ui, sans-serif;
+  }
+
+  nav {
+    margin-bottom: 2rem;
+    color: #666;
+  }
+
+  nav a {
+    color: #0066cc;
+    text-decoration: none;
+  }
+
+  pre {
+    background: #f5f5f5;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+
+  code {
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 1px solid #ddd;
+  }
+
+  th {
+    font-weight: bold;
+    background: #f5f5f5;
+  }
+</style>
+```
+
+## Docusaurus Plugin
+
+Docusaurus is a popular documentation framework. This example shows how to create a plugin that generates API documentation.
+
+### Plugin Structure
+
+```typescript
+// plugins/docusaurus-plugin-opendocs/index.ts
+import type { Plugin, LoadContext } from '@docusaurus/types';
+import { DocSet, Project, DocItem } from '@opendocs/model';
+import fs from 'fs/promises';
+import path from 'path';
+
+export interface PluginOptions {
+  id?: string;
+  docsPath: string;
+  routeBasePath: string;
+  docSets: string[];
+}
+
+export default function pluginOpenDocs(
+  context: LoadContext,
+  options: PluginOptions
+): Plugin {
+  return {
+    name: 'docusaurus-plugin-opendocs',
+
+    async loadContent() {
+      const docSets: DocSet[] = [];
+
+      for (const docSetPath of options.docSets) {
+        const content = await fs.readFile(docSetPath, 'utf-8');
+        docSets.push(JSON.parse(content));
+      }
+
+      return docSets;
+    },
+
+    async contentLoaded({ content, actions }) {
+      const { createData, addRoute } = actions;
+      const docSets = content as DocSet[];
+
+      // Create data file
+      const docSetsPath = await createData(
+        'opendocs-data.json',
+        JSON.stringify(docSets, null, 2)
+      );
+
+      // Add routes for each project
+      for (const docSet of docSets) {
+        for (const project of docSet.projects) {
+          // Project index route
+          addRoute({
+            path: `/${options.routeBasePath}/${project.id}`,
+            component: '@site/src/components/OpenDocsProject.tsx',
+            exact: true,
+            modules: {
+              docSets: docSetsPath,
+            },
+            context: {
+              projectId: project.id,
+            },
+          });
+
+          // Item routes
+          for (const item of project.items || []) {
+            addRoute({
+              path: `/${options.routeBasePath}/${project.id}/${sanitizeId(item.id)}`,
+              component: '@site/src/components/OpenDocsItem.tsx',
+              exact: true,
+              modules: {
+                docSets: docSetsPath,
+              },
+              context: {
+                projectId: project.id,
+                itemId: item.id,
+              },
+            });
+          }
+        }
+      }
+    },
+
+    getThemePath() {
+      return path.resolve(__dirname, './theme');
+    },
+  };
+}
+
+function sanitizeId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+}
+```
+
+### Project Component
+
+```typescript
+// src/components/OpenDocsProject.tsx
+import React from 'react';
+import Layout from '@theme/Layout';
+import Link from '@docusaurus/Link';
+import { DocSet, Project } from '@opendocs/model';
+
+interface Props {
+  docSets: DocSet[];
+  projectId: string;
+}
+
+export default function OpenDocsProject({ docSets, projectId }: Props): JSX.Element {
+  const project = findProject(docSets, projectId);
+
+  if (!project) {
+    return <div>Project not found</div>;
+  }
+
+  // Group items by kind
+  const groups = (project.items || []).reduce((acc, item) => {
+    const kind = item.kind;
+    if (!acc[kind]) acc[kind] = [];
+    acc[kind].push(item);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  return (
+    <Layout
+      title={`${project.name} API Reference`}
+      description={`API documentation for ${project.name}`}
+    >
+      <div className="container margin-vert--lg">
+        <h1>{project.name} API Reference</h1>
+        <p>Version {project.version}</p>
+
+        {Object.entries(groups).map(([kind, items]) => (
+          <section key={kind}>
+            <h2>{pluralize(kind)}</h2>
+            <div className="row">
+              {items.map(item => (
+                <div key={item.id} className="col col--6">
+                  <Link
+                    to={`/api/${project.id}/${sanitizeId(item.id)}`}
+                    className="card"
+                  >
+                    <div className="card__header">
+                      <h3>{item.name}</h3>
+                    </div>
+                    <div className="card__body">
+                      <p>{item.docBlock?.content?.split('\n')[0]}</p>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </Layout>
+  );
+}
+
+function findProject(docSets: DocSet[], projectId: string): Project | null {
+  for (const docSet of docSets) {
+    const project = docSet.projects.find(p => p.id === projectId);
+    if (project) return project;
+  }
+  return null;
+}
+
+function sanitizeId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+}
+
+function pluralize(word: string): string {
+  if (word.endsWith('s')) return word;
+  return `${word}s`;
+}
+```
+
+### Item Component
+
+```typescript
+// src/components/OpenDocsItem.tsx
+import React from 'react';
+import Layout from '@theme/Layout';
+import CodeBlock from '@theme/CodeBlock';
+import { DocSet, Project, DocItem } from '@opendocs/model';
+
+interface Props {
+  docSets: DocSet[];
+  projectId: string;
+  itemId: string;
+}
+
+export default function OpenDocsItem({ docSets, projectId, itemId }: Props): JSX.Element {
+  const project = findProject(docSets, projectId);
+  const item = project ? findItem(project.items || [], itemId) : null;
+
+  if (!project || !item) {
+    return <div>Item not found</div>;
+  }
+
+  return (
+    <Layout
+      title={`${item.name} - ${project.name}`}
+      description={item.docBlock?.content?.split('\n')[0]}
+    >
+      <div className="container margin-vert--lg">
+        <h1>{item.name}</h1>
+
+        <CodeBlock language={project.language}>
+          {formatSignature(item, project.language)}
+        </CodeBlock>
+
+        <div className="markdown">
+          {item.docBlock?.content}
+        </div>
+
+        {item.docBlock?.tags?.param && item.docBlock.tags.param.length > 0 && (
+          <section>
+            <h2>Parameters</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {item.docBlock.tags.param.map((p, i) => {
+                  const paramName = p.parameters?.name || '';
+                  const paramType = item.metadata?.signature?.parameters
+                    ?.find(sp => sp.name === paramName)?.type?.name || 'any';
+
+                  return (
+                    <tr key={i}>
+                      <td><code>{paramName}</code></td>
+                      <td><code>{paramType}</code></td>
+                      <td>{p.content}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        {item.docBlock?.tags?.returns && (
+          <section>
+            <h2>Returns</h2>
+            <p>
+              <code>{item.metadata?.signature?.returnType?.name || 'void'}</code>
+            </p>
+            <p>{item.docBlock.tags.returns[0]}</p>
+          </section>
+        )}
+
+        {item.children && item.children.length > 0 && (
+          <section>
+            <h2>Members</h2>
+            {item.children.map(child => (
+              <article key={child.id} id={child.id}>
+                <h3>{child.name}</h3>
+                <CodeBlock language={project.language}>
+                  {formatSignature(child, project.language)}
+                </CodeBlock>
+                <p>{child.docBlock?.content}</p>
+              </article>
+            ))}
+          </section>
+        )}
+      </div>
+    </Layout>
+  );
+}
+
+function findProject(docSets: DocSet[], projectId: string): Project | null {
+  for (const docSet of docSets) {
+    const project = docSet.projects.find(p => p.id === projectId);
+    if (project) return project;
+  }
+  return null;
+}
+
+function findItem(items: DocItem[], itemId: string): DocItem | null {
+  for (const item of items) {
+    if (item.id === itemId) return item;
+    if (item.children) {
+      const found = findItem(item.children, itemId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function formatSignature(item: DocItem, language: string): string {
+  const sig = item.metadata?.signature;
+  if (!sig) return item.name;
+
+  switch (language) {
+    case 'typescript':
+      const params = sig.parameters
+        ?.map(p => `${p.name}: ${p.type?.name || 'any'}`)
+        .join(', ') || '';
+      return `${item.kind} ${item.name}(${params}): ${sig.returnType?.name || 'void'}`;
+
+    case 'python':
+      const pyParams = sig.parameters
+        ?.map(p => `${p.name}${p.type?.name ? `: ${p.type.name}` : ''}`)
+        .join(', ') || '';
+      const returnType = sig.returnType?.name ? ` -> ${sig.returnType.name}` : '';
+      return `def ${item.name}(${pyParams})${returnType}:`;
+
+    case 'go':
+      const receiver = item.metadata?.receiver ? `(${item.metadata.receiver}) ` : '';
+      const goParams = sig.parameters
+        ?.map(p => `${p.name} ${p.type?.name || 'interface{}'}`)
+        .join(', ') || '';
+      return `func ${receiver}${item.name}(${goParams}) ${sig.returnType?.name || ''}`;
+
+    default:
+      return item.name;
+  }
+}
+```
+
+### Usage in docusaurus.config.js
+
+```javascript
+// docusaurus.config.js
+module.exports = {
+  plugins: [
+    [
+      './plugins/docusaurus-plugin-opendocs',
+      {
+        docsPath: 'docs',
+        routeBasePath: 'api',
+        docSets: ['./opendocs.json'],
+      },
+    ],
+  ],
+};
+```
+
+## Custom Static Site Generator
+
+This example shows a minimal custom static site generator built from scratch.
+
+### Generator Implementation
+
+```typescript
+// generator.ts
+import { DocSet, Project, DocItem } from '@opendocs/model';
+import fs from 'fs/promises';
+import path from 'path';
+import { marked } from 'marked';
+import Prism from 'prismjs';
+
+interface GeneratorConfig {
+  input: string;
+  output: string;
+  title: string;
+  baseUrl?: string;
+}
+
+export class StaticSiteGenerator {
+  constructor(private config: GeneratorConfig) {}
+
+  async generate(): Promise<void> {
+    // Load DocSet
+    const docSet = await this.loadDocSet();
+
+    // Create output directory
+    await fs.mkdir(this.config.output, { recursive: true });
+
+    // Copy static assets
+    await this.copyAssets();
+
+    // Generate index page
+    await this.generateIndex(docSet);
+
+    // Generate project pages
+    for (const project of docSet.projects) {
+      await this.generateProject(project);
+    }
+
+    console.log(`✓ Generated ${docSet.projects.length} projects`);
+  }
+
+  private async loadDocSet(): Promise<DocSet> {
+    const content = await fs.readFile(this.config.input, 'utf-8');
+    return JSON.parse(content);
+  }
+
+  private async copyAssets(): Promise<void> {
+    const assetsDir = path.join(this.config.output, 'assets');
+    await fs.mkdir(assetsDir, { recursive: true });
+
+    // Create CSS
+    const css = this.generateCSS();
+    await fs.writeFile(path.join(assetsDir, 'styles.css'), css);
+
+    // Create JavaScript
+    const js = this.generateJS();
+    await fs.writeFile(path.join(assetsDir, 'app.js'), js);
+  }
+
+  private async generateIndex(docSet: DocSet): Promise<void> {
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${this.config.title}</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header>
+    <h1>${docSet.name}</h1>
+    <p>${docSet.version}</p>
+  </header>
+
+  <nav class="sidebar">
+    <ul>
+      ${docSet.projects.map(p => `
+        <li>
+          <a href="/${p.id}/index.html">${p.name}</a>
+        </li>
+      `).join('')}
+    </ul>
+  </nav>
+
+  <main>
+    <h2>Welcome</h2>
+    <p>Select a project from the sidebar to view its API documentation.</p>
+
+    <div class="projects">
+      ${docSet.projects.map(p => `
+        <a href="/${p.id}/index.html" class="project-card">
+          <h3>${p.name}</h3>
+          <p>${p.language} • v${p.version}</p>
+        </a>
+      `).join('')}
+    </div>
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
+    `;
+
+    await fs.writeFile(path.join(this.config.output, 'index.html'), html);
+  }
+
+  private async generateProject(project: Project): Promise<void> {
+    const projectDir = path.join(this.config.output, project.id);
+    await fs.mkdir(projectDir, { recursive: true });
+
+    // Build item index for cross-references
+    const itemIndex = this.buildItemIndex(project.items || []);
+
+    // Generate project index
+    const indexHtml = this.renderProjectIndex(project);
+    await fs.writeFile(path.join(projectDir, 'index.html'), indexHtml);
+
+    // Generate item pages
+    for (const item of project.items || []) {
+      const itemHtml = this.renderItem(item, project, itemIndex);
+      const filename = `${this.sanitizeId(item.id)}.html`;
+      await fs.writeFile(path.join(projectDir, filename), itemHtml);
+    }
+  }
+
+  private buildItemIndex(items: DocItem[]): Map<string, DocItem> {
+    const index = new Map<string, DocItem>();
+
+    function indexItem(item: DocItem) {
+      index.set(item.id, item);
+      if (item.children) {
+        item.children.forEach(indexItem);
+      }
+    }
+
+    items.forEach(indexItem);
+    return index;
+  }
+
+  private renderProjectIndex(project: Project): string {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${project.name} - ${this.config.title}</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb">
+      <a href="/">Home</a> / ${project.name}
+    </nav>
+    <h1>${project.name}</h1>
+    <p>${project.language} • v${project.version}</p>
+  </header>
+
+  <main>
+    ${(project.items || []).map(item => `
+      <a href="${this.sanitizeId(item.id)}.html" class="api-card">
+        <h3>${item.name}</h3>
+        <span class="kind">${item.kind}</span>
+        <p>${item.docBlock?.content?.split('\n')[0] || ''}</p>
+      </a>
+    `).join('')}
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
+    `;
+  }
+
+  private renderItem(
+    item: DocItem,
+    project: Project,
+    itemIndex: Map<string, DocItem>
+  ): string {
+    const signature = this.formatSignature(item, project.language);
+    const highlighted = Prism.highlight(
+      signature,
+      Prism.languages[project.language] || Prism.languages.text,
+      project.language
+    );
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${item.name} - ${project.name}</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header>
+    <nav class="breadcrumb">
+      <a href="/">Home</a> /
+      <a href="/index.html">${project.name}</a> /
+      ${item.name}
+    </nav>
+  </header>
+
+  <main>
+    <h1>${item.name}</h1>
+    <span class="kind-badge">${item.kind}</span>
+
+    <pre><code class="language-${project.language}">${highlighted}</code></pre>
+
+    ${item.docBlock?.content ? `
+      <div class="description">
+        ${marked(item.docBlock.content)}
+      </div>
+    ` : ''}
+
+    ${this.renderParameters(item)}
+    ${this.renderReturns(item)}
+    ${this.renderChildren(item, project.language)}
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
+    `;
+  }
+
+  private formatSignature(item: DocItem, language: string): string {
+    const sig = item.metadata?.signature;
+    if (!sig) return item.name;
+
+    switch (language) {
+      case 'typescript':
+        const params = sig.parameters
+          ?.map(p => `${p.name}: ${p.type?.name || 'any'}`)
+          .join(', ') || '';
+        return `${item.kind} ${item.name}(${params}): ${sig.returnType?.name || 'void'}`;
+      default:
+        return item.name;
+    }
+  }
+
+  private renderParameters(item: DocItem): string {
+    const params = item.docBlock?.tags?.param;
+    if (!params || params.length === 0) return '';
+
+    return `
+      <section>
+        <h2>Parameters</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${params.map(p => {
+              const name = p.parameters?.name || '';
+              const type = item.metadata?.signature?.parameters
+                ?.find(sp => sp.name === name)?.type?.name || 'any';
+              return `
+                <tr>
+                  <td><code>${name}</code></td>
+                  <td><code>${type}</code></td>
+                  <td>${p.content || ''}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </section>
+    `;
+  }
+
+  private renderReturns(item: DocItem): string {
+    const returns = item.docBlock?.tags?.returns;
+    if (!returns || returns.length === 0) return '';
+
+    return `
+      <section>
+        <h2>Returns</h2>
+        <p><code>${item.metadata?.signature?.returnType?.name || 'void'}</code></p>
+        <p>${returns[0]}</p>
+      </section>
+    `;
+  }
+
+  private renderChildren(item: DocItem, language: string): string {
+    if (!item.children || item.children.length === 0) return '';
+
+    return `
+      <section>
+        <h2>Members</h2>
+        ${item.children.map(child => `
+          <article id="${child.id}">
+            <h3>${child.name}</h3>
+            <pre><code>${this.formatSignature(child, language)}</code></pre>
+            <p>${child.docBlock?.content || ''}</p>
+          </article>
+        `).join('')}
+      </section>
+    `;
+  }
+
+  private generateCSS(): string {
+    return `
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+      header { background: #f5f5f5; padding: 1rem 2rem; border-bottom: 1px solid #ddd; }
+      main { max-width: 800px; margin: 0 auto; padding: 2rem; }
+      pre { background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+      code { font-family: Monaco, Courier, monospace; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
+      .api-card { display: block; padding: 1rem; margin: 1rem 0; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: inherit; }
+      .api-card:hover { background: #f5f5f5; }
+    `;
+  }
+
+  private generateJS(): string {
+    return `
+      // Add syntax highlighting class
+      document.querySelectorAll('pre code').forEach(block => {
+        block.classList.add('highlighted');
+      });
+    `;
+  }
+
+  private sanitizeId(id: string): string {
+    return id.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+  }
+}
+
+// Usage
+const generator = new StaticSiteGenerator({
+  input: './opendocs.json',
+  output: './dist',
+  title: 'API Documentation',
+});
+
+await generator.generate();
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Rendering Patterns" icon="paint-brush" href="/building/documenters/rendering">
+    Learn rendering strategies and best practices
+  </Card>
+  <Card title="Consuming Data" icon="database" href="/building/documenters/consuming">
+    Understand how to parse and traverse opendocs.json
+  </Card>
+  <Card title="UI Components" icon="palette" href="/building/ui-components/overview">
+    Build reusable rendering components
+  </Card>
+  <Card title="Specification" icon="book" href="/specification/overview">
+    Reference the OpenDocs format
+  </Card>
+</CardGroup>
