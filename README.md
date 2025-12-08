@@ -237,9 +237,9 @@ opendocs/
 - [x] TypeScript/JavaScript extractor
 - [x] Python extractor
 - [x] Go extractor
-- [x] JSON Schema validation
+- [x] JSON Schema validation in model libraries (validateDocSet, assertValidDocSet)
 - [x] Comprehensive documentation (Specification, Building guides, Examples)
-- [x] Model libraries (TypeScript, Python, Go)
+- [x] Model libraries with validation (TypeScript, Python, Go)
 - [x] Updated data model (parentId, children, content fields)
 
 ### In Progress 🚧
