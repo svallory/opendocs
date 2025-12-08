@@ -6,20 +6,778 @@ description: Add OpenDocs support for new programming languages
 
 ## Overview
 
-**Extractors** parse source code in a specific programming language and generate `opendocs.json` files. They use language-specific AST tools to extract documentation and convert it to the universal OpenDocs format.
+**Extractors** parse source code in a specific programming language and generate `opendocs.json` files. They use language-specific AST (Abstract Syntax Tree) tools to extract documentation and convert it to the universal OpenDocs format.
 
-## Coming Soon
+Building an extractor enables OpenDocs support for a new language, making its documentation available to any documentation platform that consumes the OpenDocs format.
 
-This section is under development. Check back soon for:
+## What is an Extractor?
 
-- Extractor architecture patterns
-- Using language AST tools
-- Implementing extraction logic
-- Validation and testing
+An extractor is a tool that:
+
+1. **Parses** source code files using language-specific tools
+2. **Traverses** the AST to find documentable code elements
+3. **Extracts** documentation comments and metadata
+4. **Transforms** the extracted data into OpenDocs format
+5. **Outputs** `opendocs.json` files
+
+Extractors are typically implemented as CLI tools that can be run manually or integrated into build pipelines.
+
+## Common Architecture Pattern
+
+Most extractors follow a similar architecture with these core components:
+
+### 1. CLI Interface
+
+Command-line interface for user interaction:
+
+```typescript
+// TypeScript example
+import { Command } from 'commander';
+
+const program = new Command();
+
+program
+  .name('opendocs-extract')
+  .description('Extract documentation from source code')
+  .option('-i, --input <path>', 'Input directory or file')
+  .option('-o, --output <path>', 'Output file (default: opendocs.json)')
+  .option('--project-name <name>', 'Project name')
+  .option('--project-version <version>', 'Project version')
+  .parse();
+
+const options = program.opts();
+```
+
+```python
+# Python example
+import argparse
+
+parser = argparse.ArgumentParser(
+    description='Extract documentation from Python source code'
+)
+parser.add_argument('-i', '--input', required=True, help='Input directory or file')
+parser.add_argument('-o', '--output', default='opendocs.json', help='Output file')
+parser.add_argument('--project-name', required=True, help='Project name')
+parser.add_argument('--project-version', required=True, help='Project version')
+
+args = parser.parse_args()
+```
+
+```go
+// Go example
+import "flag"
+
+var (
+    input          = flag.String("input", ".", "Input directory or file")
+    output         = flag.String("output", "opendocs.json", "Output file")
+    projectName    = flag.String("project-name", "", "Project name")
+    projectVersion = flag.String("project-version", "", "Project version")
+)
+
+flag.Parse()
+```
+
+### 2. Parser
+
+Parses source files into AST:
+
+```typescript
+// TypeScript using TypeScript Compiler API
+import ts from 'typescript';
+
+function parseFile(filePath: string): ts.SourceFile {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  return ts.createSourceFile(
+    filePath,
+    content,
+    ts.ScriptTarget.Latest,
+    true
+  );
+}
+```
+
+```python
+# Python using ast module
+import ast
+
+def parse_file(file_path: str) -> ast.Module:
+    with open(file_path, 'r') as f:
+        content = f.read()
+    return ast.parse(content, filename=file_path)
+```
+
+```go
+// Go using go/parser
+import (
+    "go/parser"
+    "go/token"
+)
+
+func parseFile(filePath string) (*ast.File, error) {
+    fset := token.NewFileSet()
+    return parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+}
+```
+
+### 3. Traverser
+
+Walks the AST to find documentable elements:
+
+```typescript
+// TypeScript traversal
+function traverse(node: ts.Node, visitor: (node: ts.Node) => void) {
+  visitor(node);
+  node.forEachChild(child => traverse(child, visitor));
+}
+
+function extractDocItems(sourceFile: ts.SourceFile): DocItem[] {
+  const items: DocItem[] = [];
+
+  traverse(sourceFile, node => {
+    if (ts.isClassDeclaration(node)) {
+      items.push(extractClass(node));
+    } else if (ts.isFunctionDeclaration(node)) {
+      items.push(extractFunction(node));
+    }
+    // ... other node types
+  });
+
+  return items;
+}
+```
+
+```python
+# Python traversal
+class DocItemVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.items = []
+
+    def visit_ClassDef(self, node: ast.ClassDef):
+        self.items.append(extract_class(node))
+        self.generic_visit(node)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+        self.items.append(extract_function(node))
+        self.generic_visit(node)
+
+def extract_doc_items(tree: ast.Module) -> list[DocItem]:
+    visitor = DocItemVisitor()
+    visitor.visit(tree)
+    return visitor.items
+```
+
+```go
+// Go traversal
+import "go/ast"
+
+func extractDocItems(file *ast.File) []DocItem {
+    items := []DocItem{}
+
+    ast.Inspect(file, func(n ast.Node) bool {
+        switch node := n.(type) {
+        case *ast.FuncDecl:
+            items = append(items, extractFunction(node))
+        case *ast.TypeSpec:
+            items = append(items, extractType(node))
+        }
+        return true
+    })
+
+    return items
+}
+```
+
+### 4. Transformer
+
+Converts AST nodes to DocItems:
+
+```typescript
+// TypeScript transformer
+function extractClass(node: ts.ClassDeclaration): DocItem {
+  const name = node.name?.text || 'Anonymous';
+  const id = buildId(name);
+
+  // Extract documentation comment
+  const docBlock = extractDocBlock(node);
+
+  // Extract children (methods, properties)
+  const children: DocItem[] = [];
+  node.members.forEach(member => {
+    if (ts.isMethodDeclaration(member)) {
+      children.push(extractMethod(member));
+    } else if (ts.isPropertyDeclaration(member)) {
+      children.push(extractProperty(member));
+    }
+  });
+
+  return {
+    id,
+    name,
+    kind: 'class',
+    language: 'typescript',
+    location: getLocation(node),
+    docBlock,
+    children,
+    metadata: {
+      visibility: getVisibility(node),
+      isAbstract: hasModifier(node, ts.SyntaxKind.AbstractKeyword),
+    },
+  };
+}
+```
+
+```python
+# Python transformer
+def extract_class(node: ast.ClassDef) -> DocItem:
+    # Extract documentation
+    doc_block = extract_docstring(node)
+
+    # Extract children (methods)
+    children = []
+    for item in node.body:
+        if isinstance(item, ast.FunctionDef):
+            children.append(extract_method(item))
+
+    return DocItem(
+        id=build_id(node.name),
+        name=node.name,
+        kind='class',
+        language='python',
+        location=get_location(node),
+        doc_block=doc_block,
+        children=children,
+        metadata={
+            'bases': [base.id for base in node.bases if isinstance(base, ast.Name)],
+        }
+    )
+```
+
+```go
+// Go transformer
+func extractType(spec *ast.TypeSpec, doc *ast.CommentGroup) DocItem {
+    // Extract documentation
+    docBlock := extractDocBlock(doc)
+
+    // Determine kind
+    kind := "type"
+    switch spec.Type.(type) {
+    case *ast.StructType:
+        kind = "struct"
+    case *ast.InterfaceType:
+        kind = "interface"
+    }
+
+    return DocItem{
+        ID:       buildID(spec.Name.Name),
+        Name:     spec.Name.Name,
+        Kind:     kind,
+        Language: "go",
+        Location: getLocation(spec.Pos()),
+        DocBlock: docBlock,
+    }
+}
+```
+
+### 5. Output Generator
+
+Writes the DocSet to a JSON file:
+
+```typescript
+// TypeScript output
+import fs from 'fs/promises';
+
+async function generateOutput(docSet: DocSet, outputPath: string): Promise<void> {
+  const json = JSON.stringify(docSet, null, 2);
+  await fs.writeFile(outputPath, json, 'utf-8');
+  console.log(`✓ Generated ${outputPath}`);
+}
+```
+
+```python
+# Python output
+import json
+
+def generate_output(doc_set: DocSet, output_path: str) -> None:
+    with open(output_path, 'w') as f:
+        json.dump(doc_set.to_dict(), f, indent=2)
+    print(f'✓ Generated {output_path}')
+```
+
+```go
+// Go output
+import (
+    "encoding/json"
+    "os"
+)
+
+func generateOutput(docSet DocSet, outputPath string) error {
+    file, err := os.Create(outputPath)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    encoder := json.NewEncoder(file)
+    encoder.SetIndent("", "  ")
+    if err := encoder.Encode(docSet); err != nil {
+        return err
+    }
+
+    fmt.Printf("✓ Generated %s\n", outputPath)
+    return nil
+}
+```
+
+## AST Parsing Strategies
+
+Different languages require different approaches to AST parsing.
+
+### TypeScript Compiler API
+
+TypeScript provides a full compiler API with type checking:
+
+```typescript
+import ts from 'typescript';
+
+// Create program with type checking
+const program = ts.createProgram(['src/index.ts'], {
+  target: ts.ScriptTarget.ES2020,
+  module: ts.ModuleKind.ESNext,
+});
+
+const typeChecker = program.getTypeChecker();
+
+// Extract type information
+function getTypeInfo(node: ts.Node): string {
+  const type = typeChecker.getTypeAtLocation(node);
+  return typeChecker.typeToString(type);
+}
+```
+
+**Benefits**:
+- Full type information available
+- Resolves imports and references
+- Handles complex TypeScript features
+
+**Challenges**:
+- Requires valid TypeScript configuration
+- Slower than simple parsing
+- Large API surface to learn
+
+### Python AST Module
+
+Python's built-in `ast` module provides simple parsing:
+
+```python
+import ast
+from docstring_parser import parse as parse_docstring
+
+tree = ast.parse(source_code)
+
+# Extract docstring
+def get_docstring(node):
+    if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.Module)):
+        docstring = ast.get_docstring(node)
+        if docstring:
+            return parse_docstring(docstring)
+    return None
+```
+
+**Benefits**:
+- Built into Python standard library
+- Simple, straightforward API
+- Fast parsing
+
+**Challenges**:
+- No type information (use `typing` module separately)
+- Limited semantic analysis
+- Requires additional library for docstring parsing
+
+### Go Parser Package
+
+Go's `go/parser` and `go/doc` packages provide comprehensive parsing:
+
+```go
+import (
+    "go/ast"
+    "go/doc"
+    "go/parser"
+    "go/token"
+)
+
+fset := token.NewFileSet()
+pkgs, err := parser.ParseDir(fset, "./", nil, parser.ParseComments)
+
+for _, pkg := range pkgs {
+    docPkg := doc.New(pkg, "./", doc.AllDecls)
+
+    // Extract package documentation
+    for _, typ := range docPkg.Types {
+        fmt.Println(typ.Name)     // Type name
+        fmt.Println(typ.Doc)      // Documentation
+        for _, method := range typ.Methods {
+            fmt.Println(method.Name) // Method name
+        }
+    }
+}
+```
+
+**Benefits**:
+- Official Go packages
+- Excellent documentation support
+- Handles Go-specific features (receivers, interfaces)
+
+**Challenges**:
+- Go-specific concepts to understand
+- Separate packages for parsing and documentation
+- Need to handle package-level organization
+
+## Language-Specific Considerations
+
+### TypeScript/JavaScript
+
+**Key features to handle**:
+- Module systems (ESM, CommonJS)
+- Type annotations and generics
+- JSDoc comments
+- Decorators
+- Async/await patterns
+
+**Recommended tools**:
+- `typescript` - Full compiler API
+- `@microsoft/api-extractor` - API documentation extraction
+- `jsdoc-parse` - JSDoc parsing
+
+### Python
+
+**Key features to handle**:
+- Docstring styles (Google, NumPy, Sphinx)
+- Type hints (PEP 484)
+- Decorators
+- Magic methods (`__init__`, `__str__`, etc.)
+- Module structure
+
+**Recommended tools**:
+- `ast` - Built-in AST parsing
+- `docstring-parser` - Parse different docstring formats
+- `typing` - Type hint support
+
+### Go
+
+**Key features to handle**:
+- Receiver methods
+- Interfaces and embedding
+- Package-level documentation
+- Go doc comment conventions
+- Exported vs unexported names (capitalization)
+
+**Recommended tools**:
+- `go/parser` - Parse Go source files
+- `go/ast` - AST representation
+- `go/doc` - Documentation extraction
+- `go/token` - Source positions
+
+### Rust
+
+**Key features to handle**:
+- Trait system
+- Lifetimes and generics
+- Module system
+- Doc comments (triple slash `///`)
+- Macros
+
+**Recommended tools**:
+- `syn` - Parsing library
+- `proc-macro2` - Token streams
+- `quote` - Code generation
+
+## Output Generation Patterns
+
+### Minimal DocSet
+
+Create the simplest valid output:
+
+```typescript
+const docSet: DocSet = {
+  id: 'my-project',
+  name: 'My Project',
+  version: '1.0.0',
+  format: 'json',
+  projects: [
+    {
+      id: 'main',
+      name: 'Main Project',
+      language: 'typescript',
+      version: '1.0.0',
+      items: extractedItems,
+    },
+  ],
+};
+```
+
+### Multi-Project DocSet
+
+Support monorepos with multiple projects:
+
+```typescript
+const docSet: DocSet = {
+  id: 'monorepo',
+  name: 'My Monorepo',
+  version: '1.0.0',
+  format: 'json',
+  projects: [
+    {
+      id: 'core',
+      name: 'Core Library',
+      language: 'typescript',
+      version: '1.0.0',
+      items: coreItems,
+    },
+    {
+      id: 'utils',
+      name: 'Utilities',
+      language: 'typescript',
+      version: '1.0.0',
+      items: utilItems,
+    },
+  ],
+};
+```
+
+### External References
+
+Use `$ref` for large projects:
+
+```typescript
+// Main file
+const docSet: DocSet = {
+  id: 'large-project',
+  name: 'Large Project',
+  version: '1.0.0',
+  format: 'json',
+  projects: [
+    {
+      id: 'api',
+      name: 'API',
+      language: 'typescript',
+      version: '1.0.0',
+      items: [
+        {
+          id: 'api#CoreModule',
+          name: 'CoreModule',
+          kind: 'module',
+          language: 'typescript',
+          children: { $ref: './api/core-module.json' },
+        },
+      ],
+    },
+  ],
+};
+
+// api/core-module.json
+[
+  {
+    id: 'api#CoreModule#MyClass',
+    name: 'MyClass',
+    kind: 'class',
+    language: 'typescript',
+    parentId: 'api#CoreModule',
+    // ... rest of class
+  },
+  // ... more items
+]
+```
+
+## Error Handling
+
+Robust extractors handle errors gracefully:
+
+```typescript
+class ExtractionError extends Error {
+  constructor(
+    message: string,
+    public filePath: string,
+    public line?: number
+  ) {
+    super(`${filePath}${line ? `:${line}` : ''}: ${message}`);
+  }
+}
+
+function extractWithErrorHandling(filePath: string): DocItem[] {
+  try {
+    const sourceFile = parseFile(filePath);
+    return extractDocItems(sourceFile);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.warn(`⚠ Skipping ${filePath}: Syntax error`);
+      return [];
+    }
+    throw new ExtractionError(
+      `Failed to extract: ${error.message}`,
+      filePath
+    );
+  }
+}
+```
+
+## Performance Optimization
+
+### Incremental Parsing
+
+Only parse changed files:
+
+```typescript
+interface Cache {
+  fileHashes: Map<string, string>;
+  extractedItems: Map<string, DocItem[]>;
+}
+
+async function extractIncremental(
+  files: string[],
+  cache: Cache
+): Promise<DocItem[]> {
+  const allItems: DocItem[] = [];
+
+  for (const file of files) {
+    const currentHash = await hashFile(file);
+    const cachedHash = cache.fileHashes.get(file);
+
+    if (currentHash === cachedHash) {
+      // Use cached result
+      allItems.push(...cache.extractedItems.get(file)!);
+    } else {
+      // Extract and update cache
+      const items = await extractFile(file);
+      cache.fileHashes.set(file, currentHash);
+      cache.extractedItems.set(file, items);
+      allItems.push(...items);
+    }
+  }
+
+  return allItems;
+}
+```
+
+### Parallel Processing
+
+Process multiple files concurrently:
+
+```typescript
+async function extractParallel(files: string[]): Promise<DocItem[]> {
+  const results = await Promise.all(
+    files.map(file => extractFile(file))
+  );
+
+  return results.flat();
+}
+```
+
+### Streaming Output
+
+For very large projects, stream output instead of building in memory:
+
+```typescript
+import { createWriteStream } from 'fs';
+
+async function streamOutput(
+  items: AsyncIterable<DocItem>,
+  outputPath: string
+): Promise<void> {
+  const stream = createWriteStream(outputPath);
+
+  stream.write('{\n  "items": [\n');
+
+  let first = true;
+  for await (const item of items) {
+    if (!first) stream.write(',\n');
+    stream.write('    ' + JSON.stringify(item, null, 2));
+    first = false;
+  }
+
+  stream.write('\n  ]\n}');
+  stream.end();
+}
+```
+
+## Testing Strategies
+
+### Unit Tests
+
+Test individual transformation functions:
+
+```typescript
+describe('extractClass', () => {
+  it('should extract class with methods', () => {
+    const source = `
+      /** A test class */
+      class MyClass {
+        /** A method */
+        myMethod() {}
+      }
+    `;
+
+    const sourceFile = ts.createSourceFile(
+      'test.ts',
+      source,
+      ts.ScriptTarget.Latest
+    );
+
+    const items = extractDocItems(sourceFile);
+
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe('MyClass');
+    expect(items[0].children).toHaveLength(1);
+    expect(items[0].children![0].name).toBe('myMethod');
+  });
+});
+```
+
+### Integration Tests
+
+Test with real source files:
+
+```typescript
+describe('extractor integration', () => {
+  it('should extract sandbox project', async () => {
+    const docSet = await extract({
+      input: './sandbox/typescript',
+      projectName: 'Sandbox',
+      projectVersion: '1.0.0',
+    });
+
+    expect(docSet.projects).toHaveLength(1);
+    expect(docSet.projects[0].items.length).toBeGreaterThan(0);
+  });
+});
+```
+
+### Snapshot Tests
+
+Verify output structure doesn't change unexpectedly:
+
+```typescript
+it('should match snapshot', async () => {
+  const docSet = await extract({
+    input: './fixtures/simple.ts',
+    projectName: 'Test',
+    projectVersion: '1.0.0',
+  });
+
+  expect(docSet).toMatchSnapshot();
+});
+```
+
+## Next Steps
 
 <CardGroup cols={2}>
+  <Card title="Implementation Guide" icon="code" href="/building/extractors/implementation">
+    Step-by-step extractor implementation
+  </Card>
+  <Card title="Validation & Testing" icon="check" href="/building/extractors/validation">
+    Ensure your extractor outputs valid opendocs.json
+  </Card>
   <Card title="Specification" icon="book" href="/specification/overview">
-    Learn the OpenDocs format
+    Reference the OpenDocs format
   </Card>
   <Card title="Building Overview" icon="hammer" href="/building/overview">
     Explore other building options
