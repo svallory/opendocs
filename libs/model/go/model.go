@@ -138,25 +138,16 @@ type DocItem struct {
 	// Children contains child items
 	Children []DocItem `json:"children,omitempty"`
 
-	// Visibility is the access level (public, private, protected, internal)
-	Visibility string `json:"visibility,omitempty"`
-
-	// IsStatic indicates if the item is static
-	IsStatic bool `json:"isStatic,omitempty"`
-
-	// IsAbstract indicates if the item is abstract
-	IsAbstract bool `json:"isAbstract,omitempty"`
-
-	// IsReadonly indicates if the item is readonly/const
-	IsReadonly bool `json:"isReadonly,omitempty"`
-
 	// Signature contains function/method signature information
+	// Per specification, language-specific fields like visibility, isStatic, isAbstract, isReadonly
+	// should be placed in the metadata field, not as top-level properties
 	Signature *Signature `json:"signature,omitempty"`
 
 	// Type contains type information for properties/variables
 	Type *TypeReference `json:"type,omitempty"`
 
 	// Metadata contains additional language-specific metadata
+	// Examples: visibility, isStatic, isAbstract, isReadonly, decorators, receiver, etc.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 
 	// Ref is an optional JSON $ref for external file reference
@@ -179,30 +170,17 @@ type Relation struct {
 // Values can be: string (simple reference), Relation (complex), or []interface{} (multiple)
 type Relations map[string]interface{}
 
-// DocBlock represents structured documentation content
+// DocBlock represents structured documentation content extracted from code comments.
+// Per the OpenDocs specification, it contains main content and tags for structured metadata.
 type DocBlock struct {
-	// Content is the main description/summary
+	// Content is the main description/summary. Supports Markdown formatting.
 	Content string `json:"content,omitempty"`
 
-	// Remarks contains extended remarks or detailed description
-	Remarks string `json:"remarks,omitempty"`
-
-	// Tags contains documentation tags organized by tag name
+	// Tags contains documentation tags organized by tag name.
 	// Format: Record<string, (string | DocTag)[]>
-	// Each key is a tag name, value is an array of either strings or DocTag objects
+	// Each key is a tag name, value is an array of either strings or DocTag objects.
+	// Common tags: param, returns, throws, since, deprecated, example, see, etc.
 	Tags map[string][]interface{} `json:"tags,omitempty"`
-
-	// Examples contains code examples
-	Examples []string `json:"examples,omitempty"`
-
-	// Deprecated contains deprecation information
-	Deprecated *Deprecated `json:"deprecated,omitempty"`
-
-	// See contains links to related documentation
-	See []string `json:"see,omitempty"`
-
-	// Metadata contains additional metadata
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // DocTag represents a documentation tag

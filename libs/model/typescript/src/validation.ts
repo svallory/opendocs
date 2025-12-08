@@ -1,4 +1,4 @@
-import Ajv, { ValidateFunction } from 'ajv';
+import Ajv, { ValidateFunction, ErrorObject } from 'ajv';
 import { DocSet } from './DocSet';
 
 // Import the schema - will be copied during build
@@ -32,7 +32,6 @@ function getValidator(): ValidateFunction {
     const ajv = new Ajv({
       allErrors: true,
       verbose: true,
-      strict: false, // Allow additional properties for extensibility
     });
     validator = ajv.compile(schema);
   }
@@ -72,12 +71,17 @@ export function validateDocSet(docSet: unknown): ValidationResult {
   }
 
   // Transform Ajv errors into a more user-friendly format
-  const errors = validate.errors?.map((error) => ({
-    path: error.instancePath || 'root',
-    message: error.message || 'Validation error',
-    keyword: error.keyword,
-    params: error.params,
-  }));
+  const errors = validate.errors?.map((error) => {
+    // Convert params to Record<string, unknown>
+    const params = error.params as Record<string, unknown>;
+
+    return {
+      path: error.instancePath || 'root',
+      message: error.message || 'Validation error',
+      keyword: error.keyword,
+      params,
+    };
+  });
 
   return {
     valid: false,

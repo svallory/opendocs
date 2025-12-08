@@ -7,10 +7,13 @@ import {
   ItemKind,
   DocBlock,
   DocTag,
+  Relations,
+  Relation,
 } from '@opendocs/model';
 import * as ts from 'typescript';
 import * as path from 'path';
 import * as fs from 'fs';
+import { TypeAnalyzer } from './typeAnalyzer';
 
 export interface ExtractorOptions {
   tsconfigPath: string;
@@ -104,9 +107,10 @@ export async function extractDocumentation(options: ExtractorOptions): Promise<D
     parentIds: [],
   };
 
-  // Extract documentation from source files
+  // Extract documentation from source files (including .d.ts declaration files)
   for (const sourceFile of program.getSourceFiles()) {
-    if (!sourceFile.isDeclarationFile && !sourceFile.fileName.includes('node_modules')) {
+    // Process both source and declaration files, but skip node_modules
+    if (!sourceFile.fileName.includes('node_modules')) {
       const items = extractFromSourceFile(sourceFile, checker, context);
       project.items?.push(...items);
     }
@@ -192,6 +196,20 @@ function extractClass(
     children: [],
   };
 
+  // Add release tag if present
+  const releaseTag = extractReleaseTag(node);
+  if (releaseTag) {
+    item.metadata = {
+      releaseTag,
+    };
+  }
+
+  // Extract heritage clauses (extends/implements)
+  const heritage = extractHeritageRelations(node, checker, context);
+  if (heritage) {
+    item.relations = heritage;
+  }
+
   // Extract members
   node.members.forEach((member) => {
     const memberItem = extractClassMember(member, sourceFile, checker, nestedContext);
@@ -236,6 +254,9 @@ function extractMethod(
   const name = (node.name as ts.Identifier).text;
   const fqn = buildFQN(context, name);
 
+  // Extract release tag
+  const releaseTag = extractReleaseTag(node);
+
   return {
     id: fqn,
     name,
@@ -250,6 +271,7 @@ function extractMethod(
         parameters: extractParameters(node, checker),
         returnType: extractReturnType(node, checker),
       },
+      ...(releaseTag && { releaseTag }),
     },
   };
 }
@@ -266,6 +288,13 @@ function extractProperty(
   const name = (node.name as ts.Identifier).text;
   const fqn = buildFQN(context, name);
 
+  // Extract release tag
+  const releaseTag = extractReleaseTag(node);
+
+  // Analyze type using TypeAnalyzer for rich type information
+  const typeAnalyzer = new TypeAnalyzer(checker);
+  const typeInfo = node.type ? typeAnalyzer.analyzeType(node.type) : undefined;
+
   return {
     id: fqn,
     name,
@@ -277,7 +306,8 @@ function extractProperty(
       visibility: getVisibility(node),
       isStatic: hasModifier(node, ts.SyntaxKind.StaticKeyword),
       isReadonly: hasModifier(node, ts.SyntaxKind.ReadonlyKeyword),
-      type: node.type ? { name: node.type.getText() } : undefined,
+      type: typeInfo,
+      ...(releaseTag && { releaseTag }),
     },
   };
 }
@@ -293,6 +323,9 @@ function extractConstructor(
 ): DocItem {
   const fqn = buildFQN(context, 'constructor');
 
+  // Extract release tag
+  const releaseTag = extractReleaseTag(node);
+
   return {
     id: fqn,
     name: 'constructor',
@@ -305,6 +338,7 @@ function extractConstructor(
       signature: {
         parameters: extractParameters(node, checker),
       },
+      ...(releaseTag && { releaseTag }),
     },
   };
 }
@@ -321,6 +355,9 @@ function extractFunction(
   const name = node.name?.text || 'AnonymousFunction';
   const fqn = buildFQN(context, name);
 
+  // Extract release tag
+  const releaseTag = extractReleaseTag(node);
+
   return {
     id: fqn,
     name,
@@ -333,6 +370,7 @@ function extractFunction(
         parameters: extractParameters(node, checker),
         returnType: extractReturnType(node, checker),
       },
+      ...(releaseTag && { releaseTag }),
     },
   };
 }
@@ -364,6 +402,20 @@ function extractInterface(
     docBlock: extractDocBlock(node),
     children: [],
   };
+
+  // Add release tag if present
+  const releaseTag = extractReleaseTag(node);
+  if (releaseTag) {
+    item.metadata = {
+      releaseTag,
+    };
+  }
+
+  // Extract heritage clauses (extends for interfaces)
+  const heritage = extractHeritageRelations(node, checker, context);
+  if (heritage) {
+    item.relations = heritage;
+  }
 
   // Extract members
   node.members.forEach((member) => {
@@ -414,6 +466,14 @@ function extractEnum(
     docBlock: extractDocBlock(node),
     children: [],
   };
+
+  // Add release tag if present
+  const releaseTag = extractReleaseTag(node);
+  if (releaseTag) {
+    item.metadata = {
+      releaseTag,
+    };
+  }
 
   // Extract enum members
   node.members.forEach((member) => {
@@ -541,15 +601,131 @@ function extractDocBlock(node: ts.Node): DocBlock | undefined {
 }
 
 /**
+ * Extract release tag from JSDoc comments
+ *
+ * Checks for @public, @beta, @alpha, and @internal tags in order of precedence
+ * Returns the most restrictive tag found
+ */
+function extractReleaseTag(node: ts.Node): string | undefined {
+  const jsDocTags = ts.getJSDocTags(node);
+
+  // Check for release tags in order of precedence (most restrictive first)
+  for (const tag of jsDocTags) {
+    const tagName = tag.tagName.text.toLowerCase();
+    if (tagName === 'internal') return 'internal';
+  }
+
+  for (const tag of jsDocTags) {
+    const tagName = tag.tagName.text.toLowerCase();
+    if (tagName === 'alpha') return 'alpha';
+  }
+
+  for (const tag of jsDocTags) {
+    const tagName = tag.tagName.text.toLowerCase();
+    if (tagName === 'beta') return 'beta';
+  }
+
+  for (const tag of jsDocTags) {
+    const tagName = tag.tagName.text.toLowerCase();
+    if (tagName === 'public') return 'public';
+  }
+
+  // Default to 'public' if no release tag is specified
+  return undefined;
+}
+
+/**
+ * Resolve a type reference to a FQN or Relation object
+ *
+ * Attempts to resolve the type expression to a fully qualified name.
+ * If the type has type arguments, returns a Relation object with metadata.
+ */
+function resolveTypeReference(
+  typeExpr: ts.ExpressionWithTypeArguments,
+  checker: ts.TypeChecker,
+  context: ExtractionContext
+): string | Relation {
+  const typeName = typeExpr.expression.getText();
+
+  // Try to resolve to a symbol
+  const symbol = checker.getSymbolAtLocation(typeExpr.expression);
+  let fqn = typeName; // Default to the text representation
+
+  if (symbol) {
+    const declaration = symbol.declarations?.[0];
+    if (declaration) {
+      const declarationSourceFile = declaration.getSourceFile();
+
+      // Try to build a FQN from the symbol
+      // For now, use a simple approach: package#SymbolName
+      const symbolName = symbol.getName();
+
+      // If it's from the same project, build FQN
+      if (!declarationSourceFile.fileName.includes('node_modules')) {
+        fqn = `${context.parentIds[0]}#${symbolName}`;
+      }
+    }
+  }
+
+  // Check if it has type arguments
+  if (typeExpr.typeArguments && typeExpr.typeArguments.length > 0) {
+    const relation: Relation = {
+      kind: 'extends',
+      target: fqn,
+      metadata: {
+        typeArguments: typeExpr.typeArguments.map((t) => t.getText()),
+      },
+    };
+    return relation;
+  }
+
+  return fqn;
+}
+
+/**
+ * Extract heritage clauses (extends/implements) from a class or interface
+ */
+function extractHeritageRelations(
+  node: ts.ClassDeclaration | ts.InterfaceDeclaration,
+  checker: ts.TypeChecker,
+  context: ExtractionContext
+): Relations | undefined {
+  if (!node.heritageClauses || node.heritageClauses.length === 0) {
+    return undefined;
+  }
+
+  const relations: Relations = {};
+
+  for (const clause of node.heritageClauses) {
+    if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+      // Extract extends relationships
+      const extendsTypes = clause.types.map((t) =>
+        resolveTypeReference(t, checker, context)
+      );
+      relations.extends = extendsTypes.length === 1 ? extendsTypes[0] : extendsTypes;
+    } else if (clause.token === ts.SyntaxKind.ImplementsKeyword) {
+      // Extract implements relationships
+      const implementsTypes = clause.types.map((t) =>
+        resolveTypeReference(t, checker, context)
+      );
+      relations.implements = implementsTypes;
+    }
+  }
+
+  return Object.keys(relations).length > 0 ? relations : undefined;
+}
+
+/**
  * Extract parameters from a function-like declaration
  */
 function extractParameters(
   node: ts.FunctionLikeDeclaration,
   checker: ts.TypeChecker
 ): any[] {
+  const typeAnalyzer = new TypeAnalyzer(checker);
   return node.parameters.map((param) => ({
     name: param.name.getText(),
-    type: param.type ? { name: param.type.getText() } : undefined,
+    type: param.type ? typeAnalyzer.analyzeType(param.type) : undefined,
     isOptional: !!param.questionToken,
     isRest: !!param.dotDotDotToken,
   }));
@@ -560,7 +736,8 @@ function extractParameters(
  */
 function extractReturnType(node: ts.FunctionLikeDeclaration, checker: ts.TypeChecker): any {
   if (node.type) {
-    return { name: node.type.getText() };
+    const typeAnalyzer = new TypeAnalyzer(checker);
+    return typeAnalyzer.analyzeType(node.type);
   }
   return undefined;
 }

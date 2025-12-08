@@ -157,7 +157,7 @@ export class ProjectUtils {
       for (const item of items) {
         if (item.id === itemId) return item;
 
-        const found = searchInItems(item.items);
+        const found = searchInItems(item.children);
         if (found) return found;
       }
 
@@ -180,7 +180,7 @@ export class ProjectUtils {
         if (item.kind === kind) {
           results.push(item);
         }
-        searchInItems(item.items);
+        searchInItems(item.children);
       }
     };
 
@@ -208,7 +208,7 @@ export class ProjectUtils {
 
       let count = items.length;
       for (const item of items) {
-        count += countInItems(item.items);
+        count += countInItems(item.children);
       }
       return count;
     };

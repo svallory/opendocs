@@ -5,25 +5,24 @@ import { DocTag } from './DocTag';
  *
  * DocBlock provides a standardized way to represent documentation across different
  * languages and documentation formats (JSDoc, JavaDoc, Python docstrings, etc.).
+ * Per the OpenDocs specification, it contains a main content field and
+ * a tags field for structured metadata.
  */
 export interface DocBlock {
   /**
-   * Main description/summary of the documented element
+   * Main documentation text. Supports Markdown formatting.
    */
   content?: string;
 
   /**
-   * Extended remarks or detailed description
-   */
-  remarks?: string;
-
-  /**
-   * Documentation tags organized by tag name
+   * Documentation tags organized by tag name.
    *
-   * Per the OpenDocs specification, tags use the format Record<string, (string | DocTag)[]>
+   * Format: Record<string, (string | DocTag)[]>
    * where each tag name maps to an array of values (either simple strings or DocTag objects).
    *
-   * Example:
+   * Common tags include: param, returns, throws, since, deprecated, example, see, etc.
+   *
+   * @example
    * ```json
    * {
    *   "tags": {
@@ -36,41 +35,6 @@ export interface DocBlock {
    * ```
    */
   tags?: Record<string, (string | DocTag)[]>;
-
-  /**
-   * Code examples demonstrating usage
-   */
-  examples?: string[];
-
-  /**
-   * @deprecated marker and message
-   */
-  deprecated?: {
-    /**
-     * Deprecation message
-     */
-    message?: string;
-
-    /**
-     * Version when deprecated
-     */
-    since?: string;
-
-    /**
-     * Suggested alternative
-     */
-    alternative?: string;
-  };
-
-  /**
-   * Links to related documentation or external resources
-   */
-  see?: string[];
-
-  /**
-   * Additional metadata specific to the documentation format
-   */
-  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -95,7 +59,7 @@ export class DocBlockUtils {
    * Check if an element is deprecated
    */
   static isDeprecated(docBlock: DocBlock): boolean {
-    return docBlock.deprecated !== undefined || this.hasTag(docBlock, 'deprecated');
+    return this.hasTag(docBlock, 'deprecated');
   }
 
   /**
@@ -110,5 +74,28 @@ export class DocBlockUtils {
    */
   static getReturnsTags(docBlock: DocBlock): (string | DocTag)[] {
     return this.getTags(docBlock, 'returns');
+  }
+
+  /**
+   * Get deprecation information from the deprecated tag
+   */
+  static getDeprecationInfo(docBlock: DocBlock): (string | DocTag)[] {
+    return this.getTags(docBlock, 'deprecated');
+  }
+
+  /**
+   * Get all example tags
+   */
+  static getExamples(docBlock: DocBlock): (string | DocTag)[] {
+    return this.getTags(docBlock, 'example');
+  }
+
+  /**
+   * Get all see/seealso tags
+   */
+  static getSee(docBlock: DocBlock): (string | DocTag)[] {
+    const see = this.getTags(docBlock, 'see');
+    const seeAlso = this.getTags(docBlock, 'seealso');
+    return [...see, ...seeAlso];
   }
 }

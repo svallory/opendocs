@@ -48,15 +48,29 @@ class DocTag(TypedDict, total=False):
 
 
 class DocBlock(TypedDict, total=False):
-    """Structured documentation content."""
+    """
+    Structured documentation content.
+
+    Per the OpenDocs specification, DocBlock contains:
+    - content: Main documentation text (supports Markdown formatting)
+    - tags: Documentation tags organized by tag name
+
+    Common tags include: param, returns, throws, since, deprecated, example, see, etc.
+
+    Example:
+        {
+            "content": "Calculates the area of a rectangle.",
+            "tags": {
+                "param": [
+                    {"name": "param", "content": "The width", "parameters": {"name": "width", "type": "number"}}
+                ],
+                "returns": ["The calculated area"]
+            }
+        }
+    """
 
     content: NotRequired[str]
-    remarks: NotRequired[str]
     tags: NotRequired[Dict[str, List[Any]]]  # Record<string, (string | DocTag)[]>
-    examples: NotRequired[List[str]]
-    deprecated: NotRequired[Deprecated]
-    see: NotRequired[List[str]]
-    metadata: NotRequired[Dict[str, Any]]
 
 
 class Location(TypedDict, total=False):

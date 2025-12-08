@@ -5,10 +5,13 @@
     "rootDir": "src",
     "emitDeclarationOnly": false,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "src/**/*.json"
   ],
   "references": []
 }
