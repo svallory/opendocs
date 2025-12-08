@@ -6,22 +6,189 @@ description: Generate documentation sites from opendocs.json files
 
 ## Overview
 
-**Documenters** are tools that consume `opendocs.json` files and generate documentation in various formats - HTML sites, Markdown files, PDF manuals, or custom outputs.
+**Documenters** are tools that consume `opendocs.json` files and generate documentation in various formats - HTML sites, Markdown files, PDF manuals, or custom outputs. They bridge the gap between extracted API data and human-readable documentation.
 
-## Coming Soon
+## What is a Documenter?
 
-This section is under development. Check back soon for:
+A documenter is any tool or plugin that:
+1. **Reads** one or more `opendocs.json` files
+2. **Transforms** the structured data into a presentation format
+3. **Outputs** documentation for human consumption
 
-- Parsing opendocs.json
-- Traversing DocItem trees
-- Rendering patterns and best practices
-- Platform-specific examples (Mintlify, Astro, Docusaurus)
+Documenters can take many forms:
+- **Static site generators** (Astro, Next.js, Docusaurus plugins)
+- **Documentation platforms** (Mintlify, GitBook, ReadMe integrations)
+- **Custom renderers** (PDF generators, IDE tooltips, API explorers)
+- **Build tools** (Webpack plugins, Vite plugins, esbuild plugins)
+
+## Architecture Patterns
+
+### 1. Parser Layer
+
+The parser loads and validates `opendocs.json`:
+
+```typescript
+import { DocSet } from '@opendocs/model';
+
+async function loadDocumentation(path: string): Promise<DocSet> {
+  const content = await fs.readFile(path, 'utf-8');
+  const docSet = JSON.parse(content) as DocSet;
+
+  // Validate against schema (optional but recommended)
+  validateDocSet(docSet);
+
+  return docSet;
+}
+```
+
+### 2. Navigation Builder
+
+Build navigation structures from the DocItem hierarchy:
+
+```typescript
+function buildNavigation(project: Project): NavigationNode[] {
+  return project.items?.map(item => ({
+    label: item.name,
+    href: `#${item.id}`,
+    children: item.children?.map(child => ({
+      label: child.name,
+      href: `#${child.id}`,
+    })) || [],
+  })) || [];
+}
+```
+
+### 3. Renderer
+
+Transform DocItems into your output format:
+
+```typescript
+function renderDocItem(item: DocItem): string {
+  const content = item.docBlock?.content || '';
+  const params = getParamTags(item.docBlock);
+
+  return `
+    <article id="${item.id}">
+      <h2>${item.name}</h2>
+      <p>${content}</p>
+      ${renderParameters(params)}
+    </article>
+  `;
+}
+```
+
+## Key Responsibilities
+
+### Data Loading
+- Read `opendocs.json` from file system or network
+- Handle external references (`$ref` fields)
+- Merge multiple projects if needed
+- Cache parsed data for performance
+
+### Data Traversal
+- Walk the DocItem tree recursively
+- Resolve `parentId` relationships
+- Handle cross-references between items
+- Build search indexes
+
+### Content Rendering
+- Convert DocBlock content to HTML/Markdown
+- Render code signatures with syntax highlighting
+- Generate navigation menus and breadcrumbs
+- Create cross-reference links
+
+### Output Generation
+- Generate static HTML files
+- Create searchable indexes
+- Build API reference pages
+- Generate type definitions or examples
+
+## Integration Approaches
+
+### Plugin-Based
+Integrate with existing documentation platforms:
+
+```typescript
+// Astro integration
+export default function openDocsIntegration(): AstroIntegration {
+  return {
+    name: 'opendocs',
+    hooks: {
+      'astro:config:setup': ({ addContentCollection }) => {
+        // Register opendocs.json as content source
+      },
+    },
+  };
+}
+```
+
+### Standalone Generator
+Build a custom documentation site:
+
+```typescript
+import { DocSet } from '@opendocs/model';
+
+async function generateDocs(docSet: DocSet) {
+  for (const project of docSet.projects) {
+    const html = await renderProject(project);
+    await writeFile(`dist/${project.id}.html`, html);
+  }
+}
+```
+
+### Runtime Renderer
+Render documentation on-demand in your application:
+
+```typescript
+function ApiExplorer({ docSet }: { docSet: DocSet }) {
+  const [selected, setSelected] = useState<DocItem | null>(null);
+
+  return (
+    <div>
+      <Sidebar items={docSet.projects[0].items} onSelect={setSelected} />
+      {selected && <DocItemView item={selected} />}
+    </div>
+  );
+}
+```
+
+## Language-Specific Considerations
+
+Different languages have different documentation conventions:
+
+### TypeScript/JavaScript
+- Emphasize JSDoc tag support (@param, @returns, @example)
+- Link to TypeScript types and interfaces
+- Show module imports and exports
+
+### Python
+- Support multiple docstring styles (Google, NumPy, Sphinx)
+- Render type hints from annotations
+- Link to PEP references
+
+### Go
+- Follow Go doc comment conventions
+- Show package-level documentation
+- Handle receiver methods properly
+
+### Rust
+- Parse Markdown in doc comments
+- Link to trait implementations
+- Show lifetime and generic parameters
+
+## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Specification" icon="book" href="/specification/overview">
-    Learn the OpenDocs format
+  <Card title="Consuming Data" icon="code" href="/building/documenters/consuming">
+    Learn how to parse and traverse opendocs.json
   </Card>
-  <Card title="Building Overview" icon="hammer" href="/building/overview">
-    Explore other building options
+  <Card title="Rendering Patterns" icon="paint-brush" href="/building/documenters/rendering">
+    Explore rendering strategies
+  </Card>
+  <Card title="Examples" icon="lightbulb" href="/building/documenters/examples">
+    See platform integration examples
+  </Card>
+  <Card title="Specification" icon="book" href="/specification/overview">
+    Reference the OpenDocs format
   </Card>
 </CardGroup>
