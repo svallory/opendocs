@@ -163,11 +163,8 @@ func extractType(t *doc.Type, fset *token.FileSet, basePath string, ctx extracti
 		Name:     t.Name,
 		Kind:     getTypeKind(t),
 		Language: model.LangGo,
-		Relations: model.Relations{
-			"container": ctx.packageName,
-		},
 		DocBlock: extractDocBlock(t.Doc),
-		Items:    []model.DocItem{},
+		Children: []model.DocItem{},
 	}
 
 	// Extract location
@@ -180,7 +177,8 @@ func extractType(t *doc.Type, fset *token.FileSet, basePath string, ctx extracti
 		method := extractFunc(m, fset, basePath, nestedCtx)
 		if method != nil {
 			method.Kind = model.KindMethod
-			item.Items = append(item.Items, *method)
+			method.ParentID = &fqn
+			item.Children = append(item.Children, *method)
 		}
 	}
 
@@ -188,7 +186,8 @@ func extractType(t *doc.Type, fset *token.FileSet, basePath string, ctx extracti
 	for _, f := range t.Funcs {
 		fn := extractFunc(f, fset, basePath, nestedCtx)
 		if fn != nil {
-			item.Items = append(item.Items, *fn)
+			fn.ParentID = &fqn
+			item.Children = append(item.Children, *fn)
 		}
 	}
 
@@ -204,9 +203,6 @@ func extractFunc(f *doc.Func, fset *token.FileSet, basePath string, ctx extracti
 		Name:     f.Name,
 		Kind:     model.KindFunction,
 		Language: model.LangGo,
-		Relations: model.Relations{
-			"container": ctx.packageName,
-		},
 		DocBlock: extractDocBlock(f.Doc),
 	}
 
@@ -275,7 +271,7 @@ func extractDocBlock(docText string) *model.DocBlock {
 	}
 
 	return &model.DocBlock{
-		Description: strings.TrimSpace(docText),
+		Content: strings.TrimSpace(docText),
 	}
 }
 
