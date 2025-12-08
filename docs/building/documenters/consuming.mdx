@@ -4,14 +4,415 @@ sidebarTitle: Consuming
 description: Parsing and traversing OpenDocs files
 ---
 
-## Coming Soon
+## Overview
 
-This guide will cover:
-- Parsing opendocs.json in different languages
-- Traversing the DocItem tree
-- Handling different DocItem kinds
-- Working with relations and cross-references
+This guide shows how to parse and traverse `opendocs.json` files in different programming languages. You'll learn how to load documentation data, walk the DocItem tree, and handle relationships.
 
-<Card title="Back to Documenters" icon="arrow-left" href="/building/documenters/overview">
-  Documenter overview
-</Card>
+## Parsing JSON
+
+### TypeScript
+
+Use the `@opendocs/model` package for full type safety:
+
+```typescript
+import { DocSet, Project, DocItem } from '@opendocs/model';
+import { readFile } from 'fs/promises';
+
+async function loadDocumentation(path: string): Promise<DocSet> {
+  const content = await readFile(path, 'utf-8');
+  const docSet: DocSet = JSON.parse(content);
+  return docSet;
+}
+
+// Use the loaded data
+const docSet = await loadDocumentation('./opendocs.json');
+console.log(`Loaded ${docSet.projects.length} projects`);
+```
+
+### Python
+
+Use the `opendocs-model` package for typed access:
+
+```python
+import json
+from pathlib import Path
+from opendocs_model import DocSet, Project, DocItem
+
+def load_documentation(path: Path) -> DocSet:
+    with path.open('r') as f:
+        doc_set: DocSet = json.load(f)
+    return doc_set
+
+# Use the loaded data
+doc_set = load_documentation(Path('./opendocs.json'))
+print(f"Loaded {len(doc_set['projects'])} projects")
+```
+
+### Go
+
+Use the Go model package for strongly-typed access:
+
+```go
+import (
+    "encoding/json"
+    "os"
+    model "github.com/svallory/opendocs/libs/model/go"
+)
+
+func LoadDocumentation(path string) (*model.DocSet, error) {
+    data, err := os.ReadFile(path)
+    if err != nil {
+        return nil, err
+    }
+
+    var docSet model.DocSet
+    if err := json.Unmarshal(data, &docSet); err != nil {
+        return nil, err
+    }
+
+    return &docSet, nil
+}
+```
+
+## Traversing DocItem Trees
+
+The DocItem tree represents your API hierarchy. Use the `children` field to navigate nested items:
+
+### Recursive Traversal
+
+```typescript
+function walkDocItems(item: DocItem, callback: (item: DocItem) => void) {
+  callback(item);
+
+  if (item.children) {
+    for (const child of item.children) {
+      walkDocItems(child, callback);
+    }
+  }
+}
+
+// Example: Find all methods
+const methods: DocItem[] = [];
+for (const project of docSet.projects) {
+  for (const item of project.items || []) {
+    walkDocItems(item, (docItem) => {
+      if (docItem.kind === 'method') {
+        methods.push(docItem);
+      }
+    });
+  }
+}
+```
+
+### Breadth-First Search
+
+```typescript
+function findItemById(items: DocItem[], id: string): DocItem | null {
+  const queue = [...items];
+
+  while (queue.length > 0) {
+    const item = queue.shift()!;
+
+    if (item.id === id) {
+      return item;
+    }
+
+    if (item.children) {
+      queue.push(...item.children);
+    }
+  }
+
+  return null;
+}
+```
+
+### Building a Path to an Item
+
+Use `parentId` to navigate upward:
+
+```typescript
+function buildItemPath(
+  docSet: DocSet,
+  targetId: string
+): DocItem[] {
+  const itemMap = new Map<string, DocItem>();
+
+  // Build index
+  for (const project of docSet.projects) {
+    for (const item of project.items || []) {
+      indexItems(item, itemMap);
+    }
+  }
+
+  // Build path
+  const path: DocItem[] = [];
+  let current = itemMap.get(targetId);
+
+  while (current) {
+    path.unshift(current);
+    current = current.parentId ? itemMap.get(current.parentId) : undefined;
+  }
+
+  return path;
+}
+
+function indexItems(item: DocItem, map: Map<string, DocItem>) {
+  map.set(item.id, item);
+  if (item.children) {
+    for (const child of item.children) {
+      indexItems(child, map);
+    }
+  }
+}
+```
+
+## Handling Different Kinds
+
+DocItem `kind` values are language-specific but follow common patterns:
+
+```typescript
+function getIconForKind(kind: string): string {
+  switch (kind) {
+    case 'class':
+      return '📦';
+    case 'interface':
+      return '🔷';
+    case 'function':
+    case 'method':
+      return '⚡';
+    case 'property':
+    case 'field':
+      return '🏷️';
+    case 'enum':
+      return '🔢';
+    case 'type-alias':
+    case 'typeAlias':
+      return '📝';
+    default:
+      return '📄';
+  }
+}
+```
+
+### Container vs Leaf Items
+
+Some items have children (containers), others don't (leaves):
+
+```typescript
+function isContainer(item: DocItem): boolean {
+  const containerKinds = [
+    'class',
+    'interface',
+    'enum',
+    'module',
+    'namespace',
+    'package',
+    'struct',
+    'trait',
+  ];
+  return containerKinds.includes(item.kind);
+}
+
+function isCallable(item: DocItem): boolean {
+  const callableKinds = ['function', 'method', 'constructor'];
+  return callableKinds.includes(item.kind);
+}
+```
+
+## Working with Relations
+
+Relations represent semantic connections between items (extends, implements, etc.):
+
+```typescript
+function getExtends(item: DocItem): string[] {
+  if (!item.relations?.extends) return [];
+
+  const extendsRel = item.relations.extends;
+
+  // Relations can be strings, Relation objects, or arrays
+  if (typeof extendsRel === 'string') {
+    return [extendsRel];
+  }
+
+  if (Array.isArray(extendsRel)) {
+    return extendsRel.map((rel) =>
+      typeof rel === 'string' ? rel : rel.target
+    );
+  }
+
+  return [extendsRel.target];
+}
+```
+
+### Resolving Cross-References
+
+Build an index for fast lookups:
+
+```typescript
+class DocItemIndex {
+  private items = new Map<string, DocItem>();
+
+  constructor(docSet: DocSet) {
+    for (const project of docSet.projects) {
+      this.indexProject(project);
+    }
+  }
+
+  private indexProject(project: Project) {
+    if (project.items) {
+      for (const item of project.items) {
+        this.indexItem(item);
+      }
+    }
+  }
+
+  private indexItem(item: DocItem) {
+    this.items.set(item.id, item);
+    if (item.children) {
+      for (const child of item.children) {
+        this.indexItem(child);
+      }
+    }
+  }
+
+  get(id: string): DocItem | undefined {
+    return this.items.get(id);
+  }
+
+  resolve(relation: string | { target: string }): DocItem | undefined {
+    const target = typeof relation === 'string' ? relation : relation.target;
+    return this.get(target);
+  }
+}
+
+// Usage
+const index = new DocItemIndex(docSet);
+const classItem = index.get('mypackage#MyClass');
+if (classItem?.relations?.extends) {
+  const parent = index.resolve(classItem.relations.extends);
+  console.log(`Extends: ${parent?.name}`);
+}
+```
+
+## Handling External References
+
+The `$ref` field links to external JSON files:
+
+```typescript
+async function resolveReference(ref: string, basePath: string): Promise<DocItem | Project> {
+  const fullPath = path.join(basePath, ref);
+  const content = await readFile(fullPath, 'utf-8');
+  return JSON.parse(content);
+}
+
+async function expandReferences(project: Project, basePath: string): Promise<void> {
+  if (!project.items) return;
+
+  for (let i = 0; i < project.items.length; i++) {
+    const item = project.items[i];
+
+    if (item.$ref) {
+      const resolved = await resolveReference(item.$ref, basePath);
+      project.items[i] = resolved as DocItem;
+    }
+
+    if (item.children) {
+      await expandItemReferences(item, basePath);
+    }
+  }
+}
+```
+
+## Working with DocBlocks
+
+Extract documentation content and tags:
+
+```typescript
+function getDescription(item: DocItem): string {
+  return item.docBlock?.content || '';
+}
+
+function getParamTags(docBlock?: DocBlock): Array<{ name: string; description: string }> {
+  if (!docBlock?.tags?.param) return [];
+
+  return docBlock.tags.param.map((tag) => {
+    if (typeof tag === 'string') {
+      return { name: '', description: tag };
+    }
+    return {
+      name: tag.parameters?.name || '',
+      description: tag.content || '',
+    };
+  });
+}
+
+function getReturnDescription(docBlock?: DocBlock): string {
+  if (!docBlock?.tags?.returns) return '';
+
+  const returns = docBlock.tags.returns[0];
+  return typeof returns === 'string' ? returns : returns.content || '';
+}
+```
+
+## Performance Tips
+
+### Lazy Loading
+
+Only load what you need:
+
+```typescript
+async function loadProject(docSet: DocSet, projectId: string): Promise<Project | null> {
+  for (const project of docSet.projects) {
+    if (project.$ref) {
+      // Only load if it's the one we need
+      if (project.id === projectId) {
+        return await resolveReference(project.$ref, './docs');
+      }
+    } else if (project.id === projectId) {
+      return project;
+    }
+  }
+  return null;
+}
+```
+
+### Caching
+
+Cache parsed data and indexes:
+
+```typescript
+class DocCache {
+  private cache = new Map<string, DocSet>();
+
+  async load(path: string): Promise<DocSet> {
+    if (this.cache.has(path)) {
+      return this.cache.get(path)!;
+    }
+
+    const docSet = await loadDocumentation(path);
+    this.cache.set(path, docSet);
+    return docSet;
+  }
+
+  clear() {
+    this.cache.clear();
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Rendering Patterns" icon="paint-brush" href="/building/documenters/rendering">
+    Learn how to render documentation
+  </Card>
+  <Card title="Examples" icon="lightbulb" href="/building/documenters/examples">
+    See complete platform examples
+  </Card>
+  <Card title="Specification" icon="book" href="/specification/overview">
+    Reference the full spec
+  </Card>
+  <Card title="Overview" icon="arrow-left" href="/building/documenters/overview">
+    Back to overview
+  </Card>
+</CardGroup>
