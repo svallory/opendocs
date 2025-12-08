@@ -41,6 +41,13 @@ from .model import (
     VERSION,
 )
 
+from .validation import (
+    validate_docset,
+    assert_valid_docset,
+    ValidationResult,
+    ValidationErrorDetail,
+)
+
 __all__ = [
     # Core models
     "DocSet",
@@ -67,4 +74,9 @@ __all__ = [
     "RelationKind",
     "VERSION",
     "__version__",
+    # Validation
+    "validate_docset",
+    "assert_valid_docset",
+    "ValidationResult",
+    "ValidationErrorDetail",
 ]
