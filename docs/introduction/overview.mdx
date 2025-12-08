@@ -1,0 +1,120 @@
+---
+title: What is OpenDocs?
+sidebarTitle: Overview
+description: A universal documentation format for any programming language
+---
+
+## Introduction
+
+**OpenDocs** is a specification for representing software documentation in a universal, language-agnostic format. Like OpenAPI standardized API documentation, OpenDocs standardizes code documentation across all programming languages.
+
+## The Problem
+
+Every programming language has its own documentation ecosystem:
+
+- **TypeScript** → TSDoc, TypeDoc
+- **Python** → Docstrings, Sphinx
+- **Rust** → Rustdoc
+- **Go** → Go doc comments
+- **Java** → Javadoc
+
+This fragmentation creates problems:
+
+1. **Documentation tools are language-specific** - You can't reuse doc generators across languages
+2. **Cross-language projects are inconsistent** - Monorepos with multiple languages have different doc styles
+3. **Platform integration is repetitive** - Every doc platform must build N parsers for N languages
+4. **Knowledge isn't transferable** - Learning one ecosystem doesn't help with another
+
+## The Solution
+
+OpenDocs provides a **single, universal format** that any language can export to:
+
+```
+Source Code (any language) → Extractor → opendocs.json → Documenter → Documentation Site
+```
+
+### How It Works
+
+1. **Extractors** parse your source code and generate `opendocs.json`
+2. **Documenters** consume `opendocs.json` and generate documentation
+3. **UI Components** render documentation interactively
+
+The key insight: **everything is a DocItem**. Whether it's a TypeScript class, a Rust trait, or a Python function - it's all represented the same way.
+
+## Comparison to OpenAPI
+
+| Feature | OpenAPI | OpenDocs |
+|---------|---------|----------|
+| **Purpose** | Describe REST APIs | Describe code documentation |
+| **Input** | Hand-written spec | Auto-generated from source code |
+| **Format** | JSON/YAML | JSON |
+| **Scope** | HTTP endpoints | Any code element |
+| **Generators** | Server stubs, clients | Documentation sites |
+| **Languages** | Language-agnostic | Language-agnostic output from language-specific extractors |
+
+Both are **specification formats** that enable ecosystem growth:
+
+- **OpenAPI** → Swagger UI, ReDoc, code generators
+- **OpenDocs** → Mintlify, Astro, custom doc sites
+
+## Core Concepts
+
+### Everything is a DocItem
+
+The fundamental unit in OpenDocs is the **DocItem**. A module is a DocItem. A class is a DocItem. A method is a DocItem. Even a parameter is a DocItem.
+
+This consistent abstraction means:
+- Simple mental model
+- Easy to traverse
+- Works across all languages
+
+### Language-Native IDs
+
+Each DocItem has an ID using the language's natural naming convention:
+
+| Language | Format | Example |
+|----------|--------|---------|
+| TypeScript | `package#Symbol#member` | `my-lib#Calculator#add` |
+| Python | `module.Class.method` | `mylib.Calculator.add` |
+| Rust | `crate::module::Type` | `serde::de::Deserialize` |
+| Go | `package.Function` | `fmt.Printf` |
+
+This makes IDs intuitive and enables IDE integration.
+
+### Structural vs Semantic Relationships
+
+OpenDocs separates two types of relationships:
+
+- **Structural** (`parentId`, `children`) - Where something lives in the code hierarchy
+- **Semantic** (`relations`) - What the code means (extends, implements, etc.)
+
+This clarity makes it easy to render inheritance diagrams, navigate code hierarchies, and understand architectural patterns.
+
+## Who Is This For?
+
+### Primary: Platform Developers
+
+Building documentation platforms (like Mintlify, ReadTheDocs, Docusaurus)? OpenDocs lets you support all languages with a single parser.
+
+### Secondary: Tool Builders
+
+- **Extractor developers** - Add OpenDocs support for new languages
+- **Documenter developers** - Build doc generators that consume opendocs.json
+- **UI component developers** - Create reusable documentation components
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Ecosystem Overview" icon="diagram-project" href="/introduction/ecosystem">
+    Learn about the 5 categories of OpenDocs software
+  </Card>
+  <Card title="Design Principles" icon="compass-drafting" href="/introduction/design-principles">
+    Understand the philosophy behind OpenDocs
+  </Card>
+  <Card title="Specification" icon="file-contract" href="/specification/overview">
+    Dive into the technical specification
+  </Card>
+  <Card title="Building Tools" icon="hammer" href="/building/overview">
+    Start building with OpenDocs
+  </Card>
+</CardGroup>

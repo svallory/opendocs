@@ -1,0 +1,50 @@
+/* Full Model Explorer Layout */
+
+.full-model-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  min-height: 700px;
+}
+
+.full-model-explorer__diagram {
+  width: 100%;
+  height: 1000px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.full-model-explorer__docs {
+  width: 100%;
+  min-height: 400px;
+}
+
+/* Responsive layout - diagram left, docs right for desktop */
+@media (min-width: 1024px) {
+  .full-model-explorer {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 2rem;
+  }
+
+  .full-model-explorer__diagram {
+    flex: 1;
+    min-width: 0;
+    height: 1000px;
+  }
+
+  .full-model-explorer__docs {
+    flex: 0 0 450px;
+    height: 1000px;
+  }
+}
+
+/* Dark mode support */
+.dark .full-model-explorer__diagram,
+html.dark .full-model-explorer__diagram {
+  background: #111827;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}

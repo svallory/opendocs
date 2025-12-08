@@ -204,20 +204,43 @@
           "description": "Source language",
           "enum": ["typescript", "rust", "go", "python", "java", "csharp", "javascript", "php", "ruby", "swift", "kotlin", "scala", "dart", "elixir"]
         },
+        "location": {
+          "$ref": "#/definitions/Location",
+          "description": "Source code location"
+        },
         "docBlock": {
           "$ref": "#/definitions/DocBlock",
           "description": "Documentation content"
         },
-        "container": {
-          "$ref": "#/definitions/ContainerRef",
-          "description": "Container relationship"
+        "parentId": {
+          "type": "string",
+          "description": "ID of the parent DocItem (for upward hierarchy navigation)"
+        },
+        "relations": {
+          "type": "object",
+          "description": "Semantic relationships (extends, implements, etc.)",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/Relation" },
+              {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "$ref": "#/definitions/Relation" }
+                  ]
+                }
+              }
+            ]
+          }
         },
         "metadata": {
           "type": "object",
           "description": "Language-specific metadata (includes signature, type info, etc.)",
           "additionalProperties": true
         },
-        "items": {
+        "children": {
           "type": "array",
           "description": "Child items (methods, properties, nested types)",
           "items": {
@@ -229,13 +252,54 @@
         }
       }
     },
+    "Location": {
+      "type": "object",
+      "description": "Source code location",
+      "required": ["path", "number"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "File path relative to project root"
+        },
+        "number": {
+          "type": "integer",
+          "description": "Line number (1-indexed)",
+          "minimum": 1
+        },
+        "column": {
+          "type": "integer",
+          "description": "Column number (1-indexed)",
+          "minimum": 1
+        }
+      }
+    },
+    "Relation": {
+      "type": "object",
+      "description": "Typed relationship to another DocItem",
+      "required": ["kind", "target"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Relationship type (extends, implements, etc.)"
+        },
+        "target": {
+          "type": "string",
+          "description": "Target DocItem ID"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Relationship-specific metadata",
+          "additionalProperties": true
+        }
+      }
+    },
     "DocBlock": {
       "type": "object",
       "description": "Structured documentation content",
       "properties": {
-        "description": {
+        "content": {
           "type": "string",
-          "description": "Main description text"
+          "description": "Main documentation text"
         },
         "tags": {
           "type": "object",
@@ -295,21 +359,6 @@
         "replacement": {
           "type": "string",
           "description": "Suggested replacement"
-        }
-      }
-    },
-    "ContainerRef": {
-      "type": "object",
-      "required": ["id", "relationship"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "ID of the containing DocItem"
-        },
-        "relationship": {
-          "type": "string",
-          "description": "Type of containment relationship",
-          "enum": ["module", "class", "interface", "namespace", "custom"]
         }
       }
     }

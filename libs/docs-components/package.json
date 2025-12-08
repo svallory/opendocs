@@ -5,12 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:main && npm run build:model-diagram && npm run build:feature-explorer && npm run build:full-model-explorer",
+    "build:main": "CLEAN_DIST=true vite build",
+    "build:model-diagram": "ENTRY=src/components-entry/model-diagram.jsx LIB_NAME=ModelDiagram FILE_NAME=model-diagram vite build",
+    "build:feature-explorer": "ENTRY=src/components-entry/feature-explorer.jsx LIB_NAME=FeatureExplorer FILE_NAME=feature-explorer vite build",
+    "build:full-model-explorer": "ENTRY=src/components-entry/full-model-explorer.jsx LIB_NAME=FullModelExplorer FILE_NAME=full-model-explorer vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@xyflow/react": "^12.10.0",
+    "elkjs": "^0.11.0",
+    "lucide-react": "^0.556.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

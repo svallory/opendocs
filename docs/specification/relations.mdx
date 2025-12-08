@@ -1,0 +1,410 @@
+---
+title: Relations Specification
+sidebarTitle: Relations
+description: Typed relationships between DocItems
+---
+
+## Overview
+
+**Relations** represent semantic connections between DocItems. Unlike structural hierarchy (`parentId`/`children`), relations express what the code *means* architecturally - inheritance, interface implementation, trait bounds, and other language-specific relationships.
+
+## Structural vs Semantic
+
+OpenDocs makes a critical distinction:
+
+| Type | Fields | Purpose | Example |
+|------|--------|---------|---------|
+| **Structural** | `parentId`, `children` | Where code lives | Method lives in Class |
+| **Semantic** | `relations` | What code means | Class implements Interface |
+
+**Why separate?**
+- Structural: Tree navigation, table of contents
+- Semantic: Inheritance diagrams, type hierarchies
+
+## Relations Format
+
+The `relations` field supports **three formats** for flexibility:
+
+### 1. Simple String
+
+For straightforward relationships, just use the target ID:
+
+```json
+{
+  "relations": {
+    "extends": "my-package#BaseClass"
+  }
+}
+```
+
+### 2. Relation Object
+
+For complex relationships with metadata:
+
+```json
+{
+  "relations": {
+    "rust-trait-impl": {
+      "kind": "rust-trait-impl",
+      "target": "serde::Serialize",
+      "metadata": { "derived": true }
+    }
+  }
+}
+```
+
+### 3. Array of Relations
+
+When an item has multiple relationships of the same kind:
+
+```json
+{
+  "relations": {
+    "implements": [
+      "my-package#IInterface1",
+      "my-package#IInterface2"
+    ]
+  }
+}
+```
+
+**Can also be array of Relation objects:**
+```json
+{
+  "relations": {
+    "implements": [
+      {
+        "kind": "implements",
+        "target": "my-package#IInterface1",
+        "metadata": { "explicit": true }
+      },
+      {
+        "kind": "implements",
+        "target": "my-package#IInterface2",
+        "metadata": { "explicit": false }
+      }
+    ]
+  }
+}
+```
+
+## Relation Object Schema
+
+When using the Relation object format:
+
+**Fields**:
+- **kind** (required): Relationship type
+- **target** (required): Target DocItem ID (must be valid FQN)
+- **metadata** (optional): Relationship-specific metadata
+
+**Example**:
+```json
+{
+  "kind": "rust-trait-impl",
+  "target": "serde::Serialize",
+  "metadata": { "derived": true }
+}
+```
+
+## Common Relationship Types
+
+### Universal
+
+Used across most languages:
+
+| Kind | Description |
+|------|-------------|
+| `extends` | Class inheritance or interface extension |
+| `implements` | Interface implementation |
+
+**Note**: Parent-child containment is expressed via `parentId`, not as a relation.
+
+### TypeScript/JavaScript
+
+| Kind | Description |
+|------|-------------|
+| `type-reference` | References to type definitions |
+| `export-from` | Re-exports from other modules |
+
+### Rust
+
+| Kind | Description |
+|------|-------------|
+| `rust-trait-impl` | Trait implementation |
+| `rust-associated-type` | Associated type in trait |
+| `rust-supertrait` | Trait bound |
+
+### Go
+
+| Kind | Description |
+|------|-------------|
+| `go-receiver-type` | The type a method is defined on |
+| `go-embedded-type` | Embedded struct/interface |
+
+### Python
+
+| Kind | Description |
+|------|-------------|
+| `python-decorator` | Applied decorators |
+| `python-metaclass` | Class metaclass |
+
+### Java/C#
+
+| Kind | Description |
+|------|-------------|
+| `java-annotation` | Applied annotations |
+| `java-generic-bound` | Generic type constraints |
+
+## Complete Example
+
+```json
+{
+  "id": "my-lib#MyClass",
+  "name": "MyClass",
+  "kind": "class",
+  "parentId": "my-lib#myModule",
+  "relations": {
+    "extends": "my-lib#BaseClass",
+    "implements": ["my-lib#IInterface1", "my-lib#IInterface2"],
+    "rust-trait-impl": {
+      "kind": "rust-trait-impl",
+      "target": "serde::Serialize",
+      "metadata": { "derived": true }
+    }
+  }
+}
+```
+
+## Metadata Examples
+
+### Rust: Derived Traits
+
+Distinguish between manual and derived implementations:
+
+```json
+{
+  "relations": {
+    "rust-trait-impl": {
+      "kind": "rust-trait-impl",
+      "target": "std::clone::Clone",
+      "metadata": { "derived": true }
+    }
+  }
+}
+```
+
+### Generic Constraints
+
+Track type constraints:
+
+```json
+{
+  "relations": {
+    "java-generic-bound": {
+      "kind": "java-generic-bound",
+      "target": "java.lang.Comparable",
+      "metadata": { "constraint": "where T: Clone" }
+    }
+  }
+}
+```
+
+### Explicit vs Implicit
+
+Track whether a relationship is explicit in source:
+
+```json
+{
+  "relations": {
+    "implements": {
+      "kind": "implements",
+      "target": "my-lib#IInterface",
+      "metadata": { "explicit": true }
+    }
+  }
+}
+```
+
+## Working with Relations
+
+### For Extractor Developers
+
+**Always use language-appropriate kinds:**
+
+✅ Good: `"rust-trait-impl"`, `"go-receiver-type"`
+❌ Avoid: Generic `"uses"`, `"has"`
+
+**Include metadata for context:**
+
+```json
+{
+  "relations": {
+    "rust-trait-impl": {
+      "kind": "rust-trait-impl",
+      "target": "serde::Serialize",
+      "metadata": {
+        "derived": true,
+        "source": "#[derive(Serialize)]"
+      }
+    }
+  }
+}
+```
+
+**Use arrays for multiple relations:**
+
+```json
+{
+  "relations": {
+    "implements": [
+      "IReadable",
+      "IWritable",
+      "ICloseable"
+    ]
+  }
+}
+```
+
+### For Documenter Developers
+
+**Handle all three formats:**
+
+```typescript
+function getTargets(relations: Relations, kind: string): string[] {
+  if (!relations || !(kind in relations)) {
+    return [];
+  }
+
+  const value = relations[kind];
+
+  // Simple string
+  if (typeof value === 'string') {
+    return [value];
+  }
+
+  // Array
+  if (Array.isArray(value)) {
+    return value.map(r => (typeof r === 'string' ? r : r.target));
+  }
+
+  // Relation object
+  return [value.target];
+}
+```
+
+**Render inheritance diagrams:**
+
+```typescript
+const extends = getTargets(item.relations, 'extends');
+const implements = getTargets(item.relations, 'implements');
+
+// Build class diagram showing inheritance
+```
+
+**Support language-specific relations:**
+
+```typescript
+if (item.language === 'rust') {
+  const traitImpls = getTargets(item.relations, 'rust-trait-impl');
+  // Render trait implementations
+}
+```
+
+## Best Practices
+
+### Naming Conventions
+
+Use descriptive, language-prefixed kinds for clarity:
+
+✅ `"rust-trait-impl"` - Clear it's Rust-specific
+✅ `"go-receiver-type"` - Clear it's Go-specific
+❌ `"impl"` - Ambiguous
+❌ `"has"` - Too generic
+
+### Metadata Usage
+
+Include metadata when it adds semantic value:
+
+```json
+{
+  "kind": "implements",
+  "target": "IInterface",
+  "metadata": {
+    "explicit": true,
+    "since": "2.0.0"
+  }
+}
+```
+
+### Prefer Simple Format
+
+Use simple strings unless you need metadata:
+
+```json
+// Simple is better
+{
+  "relations": {
+    "extends": "BaseClass"
+  }
+}
+
+// Only use object if you need metadata
+{
+  "relations": {
+    "extends": {
+      "kind": "extends",
+      "target": "BaseClass",
+      "metadata": { "conditional": true }
+    }
+  }
+}
+```
+
+## Common Patterns
+
+### Multiple Interfaces
+
+```json
+{
+  "relations": {
+    "implements": [
+      "IReadable",
+      "IWritable",
+      "ICloseable"
+    ]
+  }
+}
+```
+
+### Mixed Relationships
+
+```json
+{
+  "relations": {
+    "extends": "BaseComponent",
+    "implements": ["ILifecycle", "IDisposable"],
+    "python-decorator": ["@Component", "@Injectable"]
+  }
+}
+```
+
+### Cross-Project References
+
+```json
+{
+  "relations": {
+    "implements": "shared-types#IAuthProvider"
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="DocItem" icon="cube" href="/specification/docitem">
+    See how relations attach to DocItems
+  </Card>
+  <Card title="File Organization" icon="folder-open" href="/specification/file-organization">
+    Learn about multi-file documentation
+  </Card>
+</CardGroup>

@@ -1,24 +1,28 @@
 import React from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { PropertyList } from './PropertyList'
-import { fireModelSelectEvent } from '../utils/events'
 
 export function ClassNode({ data }) {
-  const { name, color, bgColor, properties, kind, showKind = false } = data
-
-  const handleClassClick = () => {
-    fireModelSelectEvent({
-      type: 'class',
-      class: name
-    })
-  }
+  const {
+    name,
+    color,
+    bgColor,
+    properties,
+    kind,
+    showKind = false,
+    highlighted = false,
+    feature = null,
+    onPropertyClick = null
+  } = data
 
   const classNameLower = name.toLowerCase()
+  const hasProperties = properties && properties.length > 0
 
   return (
     <div
-      className={`class-node class-node--${classNameLower}`}
-      onClick={handleClassClick}
+      className={`class-node class-node--${classNameLower} ${
+        highlighted ? 'class-node--highlighted' : ''
+      } ${!hasProperties ? 'class-node--empty' : ''}`}
       style={{ backgroundColor: color }}
     >
       {/* Connection handles */}
@@ -34,11 +38,14 @@ export function ClassNode({ data }) {
       </div>
 
       {/* Properties */}
-      <PropertyList
-        properties={properties}
-        className={name}
-        color={color}
-      />
+      {hasProperties && (
+        <PropertyList
+          properties={properties}
+          className={name}
+          color={color}
+          onPropertyClick={onPropertyClick}
+        />
+      )}
     </div>
   )
 }

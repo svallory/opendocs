@@ -1,0 +1,363 @@
+---
+title: Project Specification
+sidebarTitle: Project
+description: Individual projects within a documentation set
+---
+
+## Overview
+
+The **Project** model represents an individual project within a Documentation Set. In monorepos, each package, library, or app is a separate Project. Each Project has its own language, version, and contains all DocItems that make up that project's API reference.
+
+A DocSet contains one or more Projects:
+- **Monorepo**: Multiple Projects (one per package)
+- **Single-project repo**: One Project
+
+## Schema
+
+import { TypeTree } from "/snippets/tsdocs/TypeTree.jsx"
+
+export const projectType = {
+  name: "Project",
+  type: "object",
+  description: "Root container for documentation project",
+  required: true,
+  properties: [
+    {
+      name: "id",
+      type: "string",
+      description: "Unique project identifier",
+      required: true
+    },
+    {
+      name: "name",
+      type: "string",
+      description: "Human-readable project name",
+      required: true
+    },
+    {
+      name: "language",
+      type: "string",
+      description: "Programming language (typescript, rust, go, python, etc.)",
+      required: true
+    },
+    {
+      name: "description",
+      type: "string",
+      description: "Project description"
+    },
+    {
+      name: "version",
+      type: "string",
+      description: "Project version"
+    },
+    {
+      name: "repository",
+      type: "Repository",
+      description: "Source repository information for linking to source code",
+      properties: [
+        {
+          name: "type",
+          type: "string",
+          description: "Repository type (git, svn, mercurial)",
+          required: true
+        },
+        {
+          name: "url",
+          type: "string",
+          description: "Repository URL",
+          required: true
+        },
+        {
+          name: "fileUrlTemplate",
+          type: "string",
+          description: "Template for generating file URLs: {repo}/blob/{hash}/{path}#L{line}"
+        }
+      ]
+    },
+    {
+      name: "items",
+      type: "DocItem[]",
+      description: "Top-level documentation items (modules, namespaces, packages)",
+      required: true
+    },
+    {
+      name: "dependencies",
+      type: "string[]",
+      description: "IDs of projects this project depends on"
+    },
+    {
+      name: "metadata",
+      type: "object",
+      description: "Project-specific metadata"
+    }
+  ]
+};
+
+<TypeTree open {...projectType} />
+
+## Fields
+
+### id (required)
+
+Unique identifier within the DocSet. Use descriptive names like `"auth-service"` or `"web-sdk"`.
+
+**Type**: `string`
+
+**Examples**:
+- `"my-library"`
+- `"auth-service"`
+- `"web-sdk"`
+
+### name (required)
+
+Display name for the project shown in documentation UIs.
+
+**Type**: `string`
+
+**Examples**:
+- `"My Library"`
+- `"Authentication Service"`
+- `"Web SDK"`
+
+### language (required)
+
+Programming language of this project.
+
+**Type**: `string`
+
+**Common values**:
+- `"typescript"`
+- `"javascript"`
+- `"python"`
+- `"go"`
+- `"rust"`
+- `"java"`
+- `"csharp"`
+
+### description (optional)
+
+Project description, typically extracted from package.json, README, or module docstring.
+
+**Type**: `string`
+
+**Example**:
+```json
+{
+  "description": "A utility library for common tasks"
+}
+```
+
+### version (optional)
+
+Project version from package.json, setup.py, go.mod, Cargo.toml, etc.
+
+**Type**: `string`
+
+**Example**:
+```json
+{
+  "version": "2.1.0"
+}
+```
+
+### repository (optional)
+
+Repository information for generating source code links. Enables "View Source" functionality in documentation.
+
+**Type**: `Repository`
+
+**Fields**:
+- **type** (required): Repository type (`"git"`, `"svn"`, `"mercurial"`)
+- **url** (required): Repository URL (e.g., `"https://github.com/user/repo"`)
+- **fileUrlTemplate** (optional): URL template with variables
+
+**URL Template Variables**:
+- `{repo}`: Repository URL
+- `{hash}`: Git commit hash
+- `{path}`: File path from DocItem location
+- `{line}`: Line number from DocItem location
+
+**Example template**:
+```
+{repo}/blob/{hash}/{path}#L{line}
+```
+
+Generates:
+```
+https://github.com/user/repo/blob/abc123/src/file.ts#L42
+```
+
+**Full example**:
+```json
+{
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myorg/my-library",
+    "fileUrlTemplate": "{repo}/blob/{hash}/{path}#L{line}"
+  }
+}
+```
+
+### items (required)
+
+Array of top-level [DocItems](/specification/docitem) (modules, namespaces, packages).
+
+**Type**: `DocItem[]`
+
+**Note**: Unlike DocItem's `children` field, Project's `items` represents root-level items that have no parent.
+
+**Example**:
+```json
+{
+  "items": [
+    {
+      "id": "my-library#utils",
+      "name": "utils",
+      "kind": "module",
+      "language": "typescript",
+      "children": []
+    }
+  ]
+}
+```
+
+### dependencies (optional)
+
+Array of project IDs this project depends on. Enables cross-project references in monorepos.
+
+**Type**: `string[]`
+
+**Example**:
+```json
+{
+  "dependencies": ["shared-types", "utils-core"]
+}
+```
+
+### metadata (optional)
+
+Language-specific or project-specific metadata.
+
+**Type**: `object`
+
+**Common fields**:
+- `packageManager`: `"npm"`, `"yarn"`, `"pnpm"`, `"cargo"`, etc.
+- `license`: License identifier (`"MIT"`, `"Apache-2.0"`, etc.)
+- Language-specific fields
+
+**Example**:
+```json
+{
+  "metadata": {
+    "packageManager": "npm",
+    "license": "MIT",
+    "homepage": "https://example.com"
+  }
+}
+```
+
+## Complete Example
+
+```json
+{
+  "id": "my-library",
+  "name": "My Library",
+  "language": "typescript",
+  "version": "2.1.0",
+  "description": "A utility library for common tasks",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myorg/my-library",
+    "fileUrlTemplate": "{repo}/blob/{hash}/{path}#L{line}"
+  },
+  "items": [
+    {
+      "id": "my-library#utils",
+      "name": "utils",
+      "kind": "module",
+      "language": "typescript",
+      "children": []
+    }
+  ],
+  "dependencies": ["shared-types"],
+  "metadata": {
+    "packageManager": "npm",
+    "license": "MIT"
+  }
+}
+```
+
+## Best Practices
+
+### Source Links
+
+Always include repository information to enable "View Source" links:
+
+```json
+{
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myorg/repo",
+    "fileUrlTemplate": "{repo}/blob/{hash}/{path}#L{line}"
+  }
+}
+```
+
+### Monorepo Dependencies
+
+Use the `dependencies` field to track cross-project references:
+
+```json
+{
+  "id": "web-app",
+  "dependencies": ["auth-service", "api-client"]
+}
+```
+
+This helps documentation generators understand the project graph.
+
+### Language Field
+
+Use standardized lowercase language names:
+
+✅ Good:
+- `"typescript"`
+- `"python"`
+- `"rust"`
+
+❌ Avoid:
+- `"TypeScript"`
+- `"ts"`
+- `"Rust"`
+
+## Platform-Specific Templates
+
+Different platforms have different URL structures for source links:
+
+**GitHub**:
+```
+{repo}/blob/{hash}/{path}#L{line}
+```
+
+**GitLab**:
+```
+{repo}/-/blob/{hash}/{path}#L{line}
+```
+
+**Bitbucket**:
+```
+{repo}/src/{hash}/{path}#lines-{line}
+```
+
+Extractors should auto-detect the platform and use the appropriate template.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="DocItem" icon="cube" href="/specification/docitem">
+    Learn about the universal documentation element
+  </Card>
+  <Card title="DocSet" icon="box" href="/specification/docset">
+    Go back to DocSet specification
+  </Card>
+</CardGroup>

@@ -13,6 +13,8 @@
   --model-bg-docblock: #e5f5ef;
   --model-bg-tag: #fdf3e5;
 
+  --model-highlight-color: #04a5e5;
+
   --model-font-class: 'Trocchi', serif;
   --model-font-property: 'Martian Mono', monospace;
 }
@@ -172,6 +174,61 @@ html.dark .property-row:hover {
 .dark .property-row,
 html.dark .property-row {
   border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Highlighted state for feature exploration */
+.class-node--highlighted {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--model-highlight-color) 40%, transparent), 0 6px 20px rgba(0, 0, 0, 0.25);
+  transform: scale(1.02);
+  z-index: 10;
+}
+
+.class-node--highlighted:hover {
+  transform: scale(1.02) translateY(-2px);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--model-highlight-color) 50%, transparent), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Empty state when no properties are shown */
+.class-node--empty .class-node__header {
+  padding-bottom: 16px;
+}
+
+/* Dimmed state for non-highlighted nodes when a feature is selected */
+.model-diagram--feature-mode .class-node:not(.class-node--highlighted) {
+  opacity: 0.4;
+  filter: grayscale(0.3);
+}
+
+.model-diagram--feature-mode .class-node:not(.class-node--highlighted):hover {
+  opacity: 0.6;
+  transform: translateY(-1px);
+}
+
+/* Edge highlighting for feature exploration */
+.react-flow__edge.edge-highlighted path {
+  stroke: var(--model-highlight-color) !important;
+  stroke-width: 2.5px !important;
+}
+
+.react-flow__edge.edge-highlighted .react-flow__edge-path {
+  stroke: var(--model-highlight-color) !important;
+  stroke-width: 2.5px !important;
+}
+
+.react-flow__edge.edge-highlighted text {
+  fill: var(--model-highlight-color) !important;
+  font-weight: 600 !important;
+}
+
+/* Dimmed state for non-highlighted edges when a feature is selected */
+.model-diagram--feature-mode .react-flow__edge:not(.edge-highlighted) path {
+  stroke: #ccc !important;
+  opacity: 0.3;
+}
+
+.model-diagram--feature-mode .react-flow__edge:not(.edge-highlighted) text {
+  fill: #999 !important;
+  opacity: 0.3;
 }
 
 /* Simple variant adjustments */

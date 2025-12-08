@@ -1,0 +1,261 @@
+---
+title: DocSet Specification
+sidebarTitle: DocSet
+description: The root container for your OpenDocs documentation
+---
+
+## Overview
+
+The **DocSet** is the root object in every `opendocs.json` file. It serves as the entry point for your documentation and contains metadata about the documentation set along with references to all projects.
+
+In monorepos, a single DocSet contains multiple Projects (one per package/library). In single-project repositories, the DocSet contains one Project.
+
+## Schema
+
+import { TypeTree } from "/snippets/tsdocs/TypeTree.jsx"
+
+export const docSetType = {
+  name: "DocSet",
+  type: "object",
+  description: "Root object in opendocs.json file",
+  required: true,
+  properties: [
+    {
+      name: "id",
+      type: "string",
+      description: "Documentation set identifier",
+      required: true
+    },
+    {
+      name: "name",
+      type: "string",
+      description: "Human-readable documentation name",
+      required: true
+    },
+    {
+      name: "description",
+      type: "string",
+      description: "Optional description of the documentation"
+    },
+    {
+      name: "version",
+      type: "string",
+      description: "OpenDocs specification version"
+    },
+    {
+      name: "projects",
+      type: "Project[]",
+      description: "Array of projects in this documentation set",
+      required: true
+    },
+    {
+      name: "metadata",
+      type: "object",
+      description: "Additional metadata (created, modified, etc.)"
+    }
+  ]
+};
+
+<TypeTree open {...docSetType} />
+
+## Fields
+
+### id (required)
+
+Unique identifier for this documentation set. Typically matches the repository name or project name.
+
+**Type**: `string`
+
+**Examples**:
+- `"my-monorepo"`
+- `"react"`
+- `"python-stdlib"`
+
+### name (required)
+
+Human-readable name displayed in documentation UIs.
+
+**Type**: `string`
+
+**Examples**:
+- `"My Monorepo Documentation"`
+- `"React API Reference"`
+- `"Python Standard Library"`
+
+### description (optional)
+
+Extended description of what this documentation covers. Supports Markdown formatting.
+
+**Type**: `string`
+
+**Example**:
+```json
+{
+  "description": "Complete API reference for all packages in the My Monorepo project"
+}
+```
+
+### version (optional)
+
+Version of the OpenDocs specification being used. Should follow semantic versioning.
+
+**Type**: `string`
+
+**Current version**: `"1.0.0"`
+
+**Example**:
+```json
+{
+  "version": "1.0.0"
+}
+```
+
+### projects (required)
+
+Array of [Project](/specification/project) objects.
+
+**Type**: `Project[]`
+
+**Usage**:
+- **Monorepos**: Each package/library/app is a separate Project
+- **Single-project repos**: Array contains one Project
+
+**Example**:
+```json
+{
+  "projects": [
+    {
+      "id": "auth-service",
+      "name": "Auth Service",
+      "language": "typescript",
+      "items": []
+    },
+    {
+      "id": "web-sdk",
+      "name": "Web SDK",
+      "language": "typescript",
+      "items": []
+    }
+  ]
+}
+```
+
+### metadata (optional)
+
+Additional metadata about the documentation generation.
+
+**Type**: `object`
+
+**Common fields**:
+- `created` - Timestamp when documentation was generated
+- `modified` - Timestamp of last modification
+- `generator` - Tool information with `name` and `version`
+
+**Example**:
+```json
+{
+  "metadata": {
+    "created": "2024-01-15T10:30:00Z",
+    "modified": "2024-01-15T10:30:00Z",
+    "generator": {
+      "name": "@opendocs/extractor-typescript",
+      "version": "0.2.0"
+    }
+  }
+}
+```
+
+## Complete Example
+
+```json
+{
+  "id": "my-monorepo",
+  "name": "My Monorepo",
+  "description": "Documentation for all packages in My Monorepo",
+  "version": "1.0.0",
+  "projects": [
+    {
+      "id": "auth-service",
+      "name": "Auth Service",
+      "language": "typescript",
+      "version": "2.1.0",
+      "items": []
+    },
+    {
+      "id": "web-sdk",
+      "name": "Web SDK",
+      "language": "typescript",
+      "version": "1.5.0",
+      "items": []
+    }
+  ],
+  "metadata": {
+    "created": "2024-01-15T10:30:00Z",
+    "generator": {
+      "name": "@opendocs/extractor-typescript",
+      "version": "0.2.0"
+    }
+  }
+}
+```
+
+## Best Practices
+
+### Choosing an ID
+
+Use a descriptive, URL-safe identifier:
+- Match your repository name: `"my-awesome-lib"`
+- Use lowercase with hyphens: `"react-native"`
+- Avoid special characters except hyphens and underscores
+
+### Version Field
+
+Always include the `version` field to indicate spec compliance:
+
+```json
+{
+  "version": "1.0.0"
+}
+```
+
+This helps consumers understand which spec version to expect.
+
+### Monorepo Structure
+
+For monorepos, create one Project per package:
+
+```json
+{
+  "id": "monorepo",
+  "projects": [
+    { "id": "package-a", "name": "Package A", "language": "typescript", "items": [] },
+    { "id": "package-b", "name": "Package B", "language": "python", "items": [] }
+  ]
+}
+```
+
+### Generator Metadata
+
+Include generator information to help with debugging and version tracking:
+
+```json
+{
+  "metadata": {
+    "generator": {
+      "name": "@opendocs/extractor-typescript",
+      "version": "0.2.0"
+    }
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Project" icon="folder-tree" href="/specification/project">
+    Learn about the Project model
+  </Card>
+  <Card title="DocItem" icon="cube" href="/specification/docitem">
+    Understand the fundamental DocItem
+  </Card>
+</CardGroup>

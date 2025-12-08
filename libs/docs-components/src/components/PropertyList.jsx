@@ -1,16 +1,11 @@
 import React from 'react'
-import { fireModelSelectEvent } from '../utils/events'
 
-export function PropertyList({ properties, className, color }) {
+export function PropertyList({ properties, className, color, onPropertyClick }) {
   const handlePropertyClick = (e, property) => {
     e.stopPropagation()
-    fireModelSelectEvent({
-      type: 'property',
-      class: className,
-      property: property.name,
-      propertyType: property.type,
-      required: property.required
-    })
+    if (onPropertyClick) {
+      onPropertyClick(className, property.name)
+    }
   }
 
   return (

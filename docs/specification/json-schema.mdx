@@ -1,0 +1,185 @@
+---
+title: JSON Schema Reference
+sidebarTitle: JSON Schema
+description: Complete JSON Schema for validating opendocs.json files
+---
+
+## Overview
+
+The OpenDocs format is defined by a JSON Schema that can be used to validate `opendocs.json` files, enable editor autocomplete, and ensure spec compliance.
+
+## Schema Location
+
+The complete JSON Schema is located at:
+
+```
+/schemas/opendocs.schema.json
+```
+
+## Using the Schema
+
+### Validation
+
+Use the schema to validate your opendocs.json files:
+
+**Using ajv (JavaScript/TypeScript)**:
+```typescript
+import Ajv from 'ajv';
+import schema from './schemas/opendocs.schema.json';
+
+const ajv = new Ajv();
+const validate = ajv.compile(schema);
+
+const valid = validate(opendocsData);
+if (!valid) {
+  console.error(validate.errors);
+}
+```
+
+**Using jsonschema (Python)**:
+```python
+import json
+import jsonschema
+
+with open('schemas/opendocs.schema.json') as f:
+    schema = json.load(f)
+
+with open('opendocs.json') as f:
+    data = json.load(f)
+
+jsonschema.validate(instance=data, schema=schema)
+```
+
+### Editor Support
+
+Add a `$schema` reference to your opendocs.json for autocomplete:
+
+```json
+{
+  "$schema": "https://opendocs.dev/schemas/opendocs.schema.json",
+  "id": "my-project",
+  "name": "My Project",
+  "version": "1.0.0",
+  "projects": []
+}
+```
+
+Most editors (VS Code, IntelliJ, etc.) will provide autocomplete and validation based on the schema.
+
+## Schema Structure
+
+The schema defines all six OpenDocs models:
+
+### Root Object (DocSet)
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenDocs Documentation Set",
+  "type": "object",
+  "required": ["id", "name", "projects"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "version": { "type": "string" },
+    "projects": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Project" }
+    },
+    "metadata": { "type": "object" }
+  }
+}
+```
+
+### Definitions
+
+The schema includes definitions for:
+- **Project** - Project specification
+- **DocItem** - Universal documentation element
+- **DocBlock** - Documentation content
+- **DocTag** - Individual documentation tags
+- **Relation** - Typed relationships
+- **Location** - Source code location
+- **Repository** - Repository information
+
+## Accessing the Schema
+
+### From CDN
+
+```
+https://opendocs.dev/schemas/opendocs.schema.json
+```
+
+### From NPM
+
+```bash
+npm install @opendocs/schema
+```
+
+```typescript
+import schema from '@opendocs/schema';
+```
+
+### From Repository
+
+```bash
+curl -O https://raw.githubusercontent.com/opendocs/opendocs/main/docs/schemas/opendocs.schema.json
+```
+
+## Schema Validation in Extractors
+
+All extractors should validate their output against the schema before writing files:
+
+```typescript
+import Ajv from 'ajv';
+import schema from '@opendocs/schema';
+
+export function writeOpendocs(docSet: DocSet, outputPath: string) {
+  // Validate before writing
+  const ajv = new Ajv();
+  const validate = ajv.compile(schema);
+
+  if (!validate(docSet)) {
+    throw new Error(`Invalid opendocs.json: ${JSON.stringify(validate.errors)}`);
+  }
+
+  // Write file
+  fs.writeFileSync(outputPath, JSON.stringify(docSet, null, 2));
+}
+```
+
+## Schema Evolution
+
+The schema follows semantic versioning:
+
+- **Major version** (1.x.x) - Breaking changes
+- **Minor version** (x.1.x) - New optional fields
+- **Patch version** (x.x.1) - Clarifications, bug fixes
+
+When the spec version changes, the schema is updated accordingly.
+
+## Complete Schema
+
+The complete, up-to-date schema can be viewed here:
+
+<Card title="View Schema" icon="code" href="/schemas/opendocs.schema.json">
+  Complete JSON Schema definition
+</Card>
+
+Or explore the source:
+
+<Card title="GitHub" icon="github" href="https://github.com/opendocs/opendocs/blob/main/docs/schemas/opendocs.schema.json">
+  View on GitHub
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Specification Overview" icon="book" href="/specification/overview">
+    Back to specification overview
+  </Card>
+  <Card title="Building Extractors" icon="code-branch" href="/building/extractors/validation">
+    Learn about validating extractor output
+  </Card>
+</CardGroup>

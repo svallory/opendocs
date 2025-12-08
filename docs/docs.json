@@ -14,33 +14,62 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Introduction",
             "pages": [
-              "spec",
-              "get-started/design-principles"
+              "introduction/overview",
+              "introduction/ecosystem",
+              "introduction/design-principles"
             ]
           },
           {
-            "group": "Model",
+            "group": "Specification",
             "pages": [
-              "model/overview",
-              "model/quick-start",
-              "model/examples",
-              "model/reference"
+              "specification/overview",
+              "specification/docset",
+              "specification/project",
+              "specification/docitem",
+              "specification/docblock",
+              "specification/relations",
+              "specification/file-organization",
+              "specification/json-schema"
             ]
           },
           {
-            "group": "Advanced Topics",
+            "group": "Building with OpenDocs",
             "pages": [
-              "advanced/file-organization"
+              "building/overview",
+              {
+                "group": "Documenters",
+                "pages": [
+                  "building/documenters/overview",
+                  "building/documenters/consuming",
+                  "building/documenters/rendering",
+                  "building/documenters/examples"
+                ]
+              },
+              {
+                "group": "Extractors",
+                "pages": [
+                  "building/extractors/overview",
+                  "building/extractors/implementation",
+                  "building/extractors/validation"
+                ]
+              },
+              {
+                "group": "UI Components",
+                "pages": [
+                  "building/ui-components/overview",
+                  "building/ui-components/examples"
+                ]
+              }
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Developer Tools",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "tools/cursor",
+              "tools/claude-code",
+              "tools/windsurf"
             ]
           }
         ]
