@@ -8,18 +8,675 @@ description: Create reusable documentation display components
 
 **UI Components** are reusable interface elements that render OpenDocs documentation. Built with frameworks like React, Vue, or Web Components, they accept DocItems as props and display them in rich, interactive formats.
 
-## Coming Soon
+UI components enable consistent documentation presentation across different platforms while providing an enhanced user experience through interactivity, search, and navigation.
 
-This section is under development. Check back soon for:
+## What are UI Components?
 
-- Component architecture patterns
-- Working with DocItem props
-- Handling different languages and kinds
-- React and Vue examples
+UI components for OpenDocs:
+
+1. **Accept** DocItem or DocSet data as props
+2. **Render** documentation in a visual format
+3. **Provide** interactivity (search, filtering, collapsing)
+4. **Style** content consistently
+5. **Adapt** to different screen sizes
+
+Common component types include:
+- API reference browsers
+- Class diagrams
+- Method signature displays
+- Parameter tables
+- Search interfaces
+- Navigation trees
+
+## Component Architecture Patterns
+
+### 1. Container/Presentational Pattern
+
+Separate data handling from presentation:
+
+```typescript
+// Container: handles data and state
+export function APIReferenceContainer({ docSetUrl }: { docSetUrl: string }) {
+  const [docSet, setDocSet] = useState<DocSet | null>(null);
+  const [selected, setSelected] = useState<DocItem | null>(null);
+
+  useEffect(() => {
+    fetch(docSetUrl)
+      .then(res => res.json())
+      .then(setDocSet);
+  }, [docSetUrl]);
+
+  if (!docSet) return <Loading />;
+
+  return (
+    <APIReferencePresentation
+      docSet={docSet}
+      selected={selected}
+      onSelect={setSelected}
+    />
+  );
+}
+
+// Presentation: pure rendering
+export function APIReferencePresentation({
+  docSet,
+  selected,
+  onSelect,
+}: {
+  docSet: DocSet;
+  selected: DocItem | null;
+  onSelect: (item: DocItem) => void;
+}) {
+  return (
+    <div className="api-reference">
+      <Sidebar items={docSet.projects[0].items} onSelect={onSelect} />
+      {selected && <DocItemView item={selected} />}
+    </div>
+  );
+}
+```
+
+### 2. Compound Components Pattern
+
+Build complex UIs from smaller, composable parts:
+
+```typescript
+export function DocItemCard({ item }: { item: DocItem }) {
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title>{item.name}</Card.Title>
+        <Card.Badge>{item.kind}</Card.Badge>
+      </Card.Header>
+      <Card.Content>
+        <Card.Description>{item.docBlock?.content}</Card.Description>
+        {item.children && (
+          <Card.Children items={item.children} />
+        )}
+      </Card.Content>
+    </Card>
+  );
+}
+```
+
+### 3. Render Props Pattern
+
+Allow customization of rendering logic:
+
+```typescript
+export function DocItemList({
+  items,
+  renderItem,
+}: {
+  items: DocItem[];
+  renderItem: (item: DocItem) => React.ReactNode;
+}) {
+  return (
+    <ul>
+      {items.map(item => (
+        <li key={item.id}>{renderItem(item)}</li>
+      ))}
+    </ul>
+  );
+}
+
+// Usage
+<DocItemList
+  items={docSet.projects[0].items}
+  renderItem={item => (
+    <div>
+      <h3>{item.name}</h3>
+      <p>{item.docBlock?.content}</p>
+    </div>
+  )}
+/>
+```
+
+## Common Component Types
+
+### API Reference Browser
+
+Full-featured documentation browser:
+
+```typescript
+interface APIReferenceBrowserProps {
+  docSet: DocSet;
+  searchEnabled?: boolean;
+  themeMode?: 'light' | 'dark';
+}
+
+export function APIReferenceBrowser({
+  docSet,
+  searchEnabled = true,
+  themeMode = 'light',
+}: APIReferenceBrowserProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItem, setSelectedItem] = useState<DocItem | null>(null);
+
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return docSet.projects[0].items;
+    return searchItems(docSet.projects[0].items, searchQuery);
+  }, [docSet, searchQuery]);
+
+  return (
+    <div className={`api-browser theme-${themeMode}`}>
+      {searchEnabled && (
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+      )}
+      <div className="browser-layout">
+        <Navigation items={filteredItems} onSelect={setSelectedItem} />
+        <Content item={selectedItem} />
+      </div>
+    </div>
+  );
+}
+```
+
+### Class Diagram
+
+Visual representation of class relationships:
+
+```typescript
+export function ClassDiagram({ item }: { item: DocItem }) {
+  if (item.kind !== 'class') return null;
+
+  return (
+    <svg className="class-diagram" viewBox="0 0 400 300">
+      {/* Class box */}
+      <rect x="150" y="100" width="100" height="100" />
+      <text x="200" y="120" textAnchor="middle">
+        {item.name}
+      </text>
+
+      {/* Methods */}
+      {item.children?.map((child, i) => (
+        <text key={child.id} x="160" y={140 + i * 20} fontSize="12">
+          {child.name}()
+        </text>
+      ))}
+
+      {/* Inheritance arrow */}
+      {item.relations?.extends && (
+        <line x1="200" y1="100" x2="200" y2="50" stroke="black" markerEnd="url(#arrow)" />
+      )}
+    </svg>
+  );
+}
+```
+
+### Method Signature Display
+
+Formatted code signature with syntax highlighting:
+
+```typescript
+import Prism from 'prismjs';
+
+export function MethodSignature({ item }: { item: DocItem }) {
+  const signature = formatSignature(item);
+  const highlighted = Prism.highlight(
+    signature,
+    Prism.languages[item.language],
+    item.language
+  );
+
+  return (
+    <pre className="method-signature">
+      <code
+        className={`language-${item.language}`}
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
+    </pre>
+  );
+}
+
+function formatSignature(item: DocItem): string {
+  const sig = item.metadata?.signature;
+  if (!sig) return item.name;
+
+  const params = sig.parameters
+    ?.map(p => `${p.name}: ${p.type?.name || 'any'}`)
+    .join(', ') || '';
+
+  return `${item.kind} ${item.name}(${params}): ${sig.returnType?.name || 'void'}`;
+}
+```
+
+### Parameter Table
+
+Organized display of function/method parameters:
+
+```typescript
+export function ParameterTable({ item }: { item: DocItem }) {
+  const params = item.docBlock?.tags?.param || [];
+  const signature = item.metadata?.signature;
+
+  if (params.length === 0) return null;
+
+  return (
+    <table className="param-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {params.map((param, i) => {
+          const paramName = param.parameters?.name || '';
+          const paramType = signature?.parameters
+            ?.find(p => p.name === paramName)?.type?.name || 'any';
+
+          return (
+            <tr key={i}>
+              <td><code>{paramName}</code></td>
+              <td><code>{paramType}</code></td>
+              <td>{param.content}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+```
+
+### Navigation Tree
+
+Hierarchical navigation using `children` field:
+
+```typescript
+export function NavigationTree({ items }: { items: DocItem[] }) {
+  return (
+    <nav className="nav-tree">
+      <ul>
+        {items.map(item => (
+          <NavTreeItem key={item.id} item={item} />
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+function NavTreeItem({ item }: { item: DocItem }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasChildren = item.children && item.children.length > 0;
+
+  return (
+    <li className="nav-item">
+      <div className="nav-item-header">
+        {hasChildren && (
+          <button
+            className="expand-toggle"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? '▼' : '▶'}
+          </button>
+        )}
+        <a href={`#${item.id}`}>{item.name}</a>
+        <span className="kind-badge">{item.kind}</span>
+      </div>
+
+      {hasChildren && expanded && (
+        <ul className="nav-children">
+          {item.children!.map(child => (
+            <NavTreeItem key={child.id} item={child} />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+```
+
+## State Management
+
+### Local State
+
+For simple components, use local state:
+
+```typescript
+export function DocItemView({ item }: { item: DocItem }) {
+  const [showChildren, setShowChildren] = useState(true);
+
+  return (
+    <div>
+      <h2>{item.name}</h2>
+      {item.children && (
+        <>
+          <button onClick={() => setShowChildren(!showChildren)}>
+            {showChildren ? 'Hide' : 'Show'} Members
+          </button>
+          {showChildren && <ChildrenList items={item.children} />}
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+### Context API
+
+Share state across multiple components:
+
+```typescript
+const DocSetContext = createContext<{
+  docSet: DocSet;
+  selectedItem: DocItem | null;
+  setSelectedItem: (item: DocItem | null) => void;
+} | null>(null);
+
+export function DocSetProvider({
+  docSet,
+  children,
+}: {
+  docSet: DocSet;
+  children: React.ReactNode;
+}) {
+  const [selectedItem, setSelectedItem] = useState<DocItem | null>(null);
+
+  return (
+    <DocSetContext.Provider value={{ docSet, selectedItem, setSelectedItem }}>
+      {children}
+    </DocSetContext.Provider>
+  );
+}
+
+export function useDocSet() {
+  const context = useContext(DocSetContext);
+  if (!context) throw new Error('useDocSet must be used within DocSetProvider');
+  return context;
+}
+
+// Usage
+<DocSetProvider docSet={docSet}>
+  <APIBrowser />
+</DocSetProvider>
+```
+
+### External State Management
+
+For complex applications, use Redux, Zustand, etc.:
+
+```typescript
+import create from 'zustand';
+
+interface DocState {
+  docSet: DocSet | null;
+  selectedItem: DocItem | null;
+  searchQuery: string;
+  setDocSet: (docSet: DocSet) => void;
+  setSelectedItem: (item: DocItem | null) => void;
+  setSearchQuery: (query: string) => void;
+}
+
+export const useDocStore = create<DocState>((set) => ({
+  docSet: null,
+  selectedItem: null,
+  searchQuery: '',
+  setDocSet: (docSet) => set({ docSet }),
+  setSelectedItem: (item) => set({ selectedItem: item }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
+}));
+```
+
+## Handling Different Languages
+
+Components should adapt to different programming languages:
+
+```typescript
+export function LanguageAwareSignature({ item }: { item: DocItem }) {
+  const formatters = {
+    typescript: formatTypeScriptSignature,
+    python: formatPythonSignature,
+    go: formatGoSignature,
+  };
+
+  const formatter = formatters[item.language] || formatGenericSignature;
+  const signature = formatter(item);
+
+  return <code className={`language-${item.language}`}>{signature}</code>;
+}
+```
+
+## Interactive Features
+
+### Search Functionality
+
+```typescript
+function searchItems(items: DocItem[], query: string): DocItem[] {
+  const lowerQuery = query.toLowerCase();
+
+  function matches(item: DocItem): boolean {
+    return (
+      item.name.toLowerCase().includes(lowerQuery) ||
+      item.docBlock?.content?.toLowerCase().includes(lowerQuery) ||
+      false
+    );
+  }
+
+  function searchRecursive(items: DocItem[]): DocItem[] {
+    const results: DocItem[] = [];
+
+    for (const item of items) {
+      if (matches(item)) {
+        results.push(item);
+      }
+
+      if (item.children) {
+        results.push(...searchRecursive(item.children));
+      }
+    }
+
+    return results;
+  }
+
+  return searchRecursive(items);
+}
+```
+
+### Filtering by Kind
+
+```typescript
+export function KindFilter({
+  items,
+  onFilter,
+}: {
+  items: DocItem[];
+  onFilter: (items: DocItem[]) => void;
+}) {
+  const kinds = Array.from(new Set(items.map(item => item.kind)));
+  const [selectedKinds, setSelectedKinds] = useState<Set<string>>(new Set(kinds));
+
+  useEffect(() => {
+    const filtered = items.filter(item => selectedKinds.has(item.kind));
+    onFilter(filtered);
+  }, [selectedKinds, items]);
+
+  return (
+    <div className="kind-filter">
+      {kinds.map(kind => (
+        <label key={kind}>
+          <input
+            type="checkbox"
+            checked={selectedKinds.has(kind)}
+            onChange={e => {
+              const newSet = new Set(selectedKinds);
+              if (e.target.checked) {
+                newSet.add(kind);
+              } else {
+                newSet.delete(kind);
+              }
+              setSelectedKinds(newSet);
+            }}
+          />
+          {kind}
+        </label>
+      ))}
+    </div>
+  );
+}
+```
+
+### Collapsible Sections
+
+```typescript
+export function CollapsibleSection({
+  title,
+  children,
+  defaultExpanded = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultExpanded?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
+  return (
+    <div className="collapsible">
+      <button
+        className="collapsible-header"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {expanded ? '▼' : '▶'} {title}
+      </button>
+      {expanded && <div className="collapsible-content">{children}</div>}
+    </div>
+  );
+}
+```
+
+## Styling Approaches
+
+### CSS Modules
+
+```typescript
+import styles from './APIReference.module.css';
+
+export function APIReference({ docSet }: { docSet: DocSet }) {
+  return (
+    <div className={styles.container}>
+      <nav className={styles.sidebar}>...</nav>
+      <main className={styles.content}>...</main>
+    </div>
+  );
+}
+```
+
+### Tailwind CSS
+
+```typescript
+export function APIReference({ docSet }: { docSet: DocSet }) {
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <nav className="w-64 border-r border-gray-200 overflow-y-auto">
+        ...
+      </nav>
+      <main className="flex-1 overflow-y-auto p-8">
+        ...
+      </main>
+    </div>
+  );
+}
+```
+
+### Styled Components
+
+```typescript
+import styled from 'styled-components';
+
+const Container = styled.div`
+  display: flex;
+  height: 100vh;
+`;
+
+const Sidebar = styled.nav`
+  width: 256px;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+`;
+
+export function APIReference({ docSet }: { docSet: DocSet }) {
+  return (
+    <Container>
+      <Sidebar>...</Sidebar>
+      <main>...</main>
+    </Container>
+  );
+}
+```
+
+## Accessibility
+
+### Semantic HTML
+
+```typescript
+export function DocItemView({ item }: { item: DocItem }) {
+  return (
+    <article aria-labelledby={`heading-${item.id}`}>
+      <header>
+        <h2 id={`heading-${item.id}`}>{item.name}</h2>
+        <span className="kind" aria-label={`Type: ${item.kind}`}>
+          {item.kind}
+        </span>
+      </header>
+      <section aria-label="Description">
+        <p>{item.docBlock?.content}</p>
+      </section>
+    </article>
+  );
+}
+```
+
+### Keyboard Navigation
+
+```typescript
+export function NavigationTree({ items }: { items: DocItem[] }) {
+  const [focusedIndex, setFocusedIndex] = useState(0);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setFocusedIndex(Math.min(focusedIndex + 1, items.length - 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setFocusedIndex(Math.max(focusedIndex - 1, 0));
+        break;
+      case 'Enter':
+        // Navigate to item
+        break;
+    }
+  };
+
+  return (
+    <ul role="tree" onKeyDown={handleKeyDown}>
+      {items.map((item, i) => (
+        <li
+          key={item.id}
+          role="treeitem"
+          tabIndex={i === focusedIndex ? 0 : -1}
+        >
+          {item.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Next Steps
 
 <CardGroup cols={2}>
+  <Card title="Component Examples" icon="code" href="/building/ui-components/examples">
+    See complete component implementations
+  </Card>
+  <Card title="Rendering Patterns" icon="paint-brush" href="/building/documenters/rendering">
+    Learn rendering strategies
+  </Card>
   <Card title="Specification" icon="book" href="/specification/overview">
-    Learn the OpenDocs format
+    Reference the OpenDocs format
   </Card>
   <Card title="Building Overview" icon="hammer" href="/building/overview">
     Explore other building options
