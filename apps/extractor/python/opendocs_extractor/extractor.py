@@ -188,10 +188,7 @@ def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path, context
         "kind": ItemKind.CLASS,
         "language": Language.PYTHON,
         "location": get_location(node, file_path, source_dir),
-        "relations": {
-            "container": context.module_path,
-        },
-        "items": [],
+        "children": [],
     }
 
     # Extract docstring
@@ -204,9 +201,10 @@ def extract_class(node: ast.ClassDef, file_path: Path, source_dir: Path, context
         if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
             method = extract_method(child, file_path, source_dir, nested_context)
             if method:
-                if "items" not in item:
-                    item["items"] = []
-                item["items"].append(method)
+                method["parent_id"] = fqn
+                if "children" not in item:
+                    item["children"] = []
+                item["children"].append(method)
 
     return item
 
@@ -226,9 +224,6 @@ def extract_method(
         "kind": ItemKind.CONSTRUCTOR if node.name == "__init__" else ItemKind.METHOD,
         "language": Language.PYTHON,
         "location": get_location(node, file_path, source_dir),
-        "relations": {
-            "container": context.parent_ids[-1] if context.parent_ids else context.module_path,
-        },
         "metadata": {
             "visibility": visibility,
             "signature": {
@@ -261,9 +256,6 @@ def extract_function(
         "kind": ItemKind.FUNCTION,
         "language": Language.PYTHON,
         "location": get_location(node, file_path, source_dir),
-        "relations": {
-            "container": context.module_path,
-        },
         "metadata": {
             "signature": {
                 "parameters": extract_parameters(node),
@@ -316,14 +308,14 @@ def extract_docblock(node: ast.AST) -> Optional[DocBlock]:
 
     docblock: DocBlock = {}
 
-    # Description
+    # Content
     if parsed.short_description or parsed.long_description:
-        description_parts = []
+        content_parts = []
         if parsed.short_description:
-            description_parts.append(parsed.short_description)
+            content_parts.append(parsed.short_description)
         if parsed.long_description:
-            description_parts.append(parsed.long_description)
-        docblock["description"] = "\n\n".join(description_parts)
+            content_parts.append(parsed.long_description)
+        docblock["content"] = "\n\n".join(content_parts)
 
     # Tags - use Record<string, (string | DocTag)[]> format per spec
     tags: Dict[str, List[Any]] = {}
