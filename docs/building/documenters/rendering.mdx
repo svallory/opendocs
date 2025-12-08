@@ -4,14 +4,1033 @@ sidebarTitle: Rendering
 description: Best practices for rendering OpenDocs content
 ---
 
-## Coming Soon
+## Overview
 
-This guide will cover:
-- Common rendering approaches
-- Handling different languages
-- Generating navigation
-- Creating cross-references and links
+Rendering is the process of transforming structured `opendocs.json` data into human-readable documentation. This guide covers common rendering approaches, navigation generation, cross-reference handling, and accessibility considerations.
 
-<Card title="Back to Documenters" icon="arrow-left" href="/building/documenters/overview">
-  Documenter overview
-</Card>
+## Common Rendering Approaches
+
+### 1. Static Site Generation (SSG)
+
+Pre-generate all HTML at build time for optimal performance and SEO.
+
+```typescript
+import { DocSet, Project, DocItem } from '@opendocs/model';
+import fs from 'fs/promises';
+
+async function generateStaticSite(docSet: DocSet) {
+  for (const project of docSet.projects) {
+    // Generate index page
+    const indexHtml = renderProjectIndex(project);
+    await fs.writeFile(`dist/${project.id}/index.html`, indexHtml);
+
+    // Generate page for each top-level item
+    for (const item of project.items || []) {
+      const itemHtml = renderDocItem(item, project);
+      await fs.writeFile(`dist/${project.id}/${item.id}.html`, itemHtml);
+    }
+  }
+}
+
+function renderProjectIndex(project: Project): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${project.name} API Documentation</title>
+        <link rel="stylesheet" href="/styles.css">
+      </head>
+      <body>
+        <nav>${renderNavigation(project)}</nav>
+        <main>
+          <h1>${project.name}</h1>
+          <p>Version ${project.version}</p>
+          ${renderItemList(project.items || [])}
+        </main>
+      </body>
+    </html>
+  `;
+}
+```
+
+**Best for**: Documentation sites, GitHub Pages, public APIs
+**Pros**: Fast loading, SEO-friendly, no runtime dependencies
+**Cons**: Requires rebuild for updates
+
+### 2. Runtime Rendering
+
+Render documentation on-demand in the browser or server.
+
+```typescript
+import { DocSet, DocItem } from '@opendocs/model';
+import { useState, useMemo } from 'react';
+
+function ApiExplorer({ docSetUrl }: { docSetUrl: string }) {
+  const [docSet, setDocSet] = useState<DocSet | null>(null);
+  const [selectedItem, setSelectedItem] = useState<DocItem | null>(null);
+
+  // Load documentation on mount
+  useEffect(() => {
+    fetch(docSetUrl)
+      .then(res => res.json())
+      .then(setDocSet);
+  }, [docSetUrl]);
+
+  // Build searchable index
+  const searchIndex = useMemo(() => {
+    if (!docSet) return [];
+    return buildSearchIndex(docSet);
+  }, [docSet]);
+
+  if (!docSet) return <div>Loading...</div>;
+
+  return (
+    <div className="api-explorer">
+      <aside>
+        <SearchBox index={searchIndex} onSelect={setSelectedItem} />
+        <Navigation items={docSet.projects[0].items} onSelect={setSelectedItem} />
+      </aside>
+      <main>
+        {selectedItem && <DocItemView item={selectedItem} />}
+      </main>
+    </div>
+  );
+}
+```
+
+**Best for**: Interactive IDEs, API explorers, dynamic filtering
+**Pros**: Always up-to-date, client-side search, no build step
+**Cons**: Initial load time, requires JavaScript
+
+### 3. PDF Generation
+
+Generate printable documentation for offline use.
+
+```typescript
+import { DocSet, DocItem } from '@opendocs/model';
+import PDFDocument from 'pdfkit';
+import fs from 'fs';
+
+async function generatePDF(docSet: DocSet, outputPath: string) {
+  const doc = new PDFDocument();
+  doc.pipe(fs.createWriteStream(outputPath));
+
+  // Title page
+  doc.fontSize(24).text(docSet.name, { align: 'center' });
+  doc.fontSize(12).text(`Version ${docSet.version}`, { align: 'center' });
+  doc.addPage();
+
+  // Table of contents
+  doc.fontSize(18).text('Table of Contents');
+  for (const project of docSet.projects) {
+    for (const item of project.items || []) {
+      doc.fontSize(12).text(`${item.name} - Page ${doc.bufferedPageRange().count + 1}`);
+    }
+  }
+
+  // Content
+  for (const project of docSet.projects) {
+    renderProjectToPDF(doc, project);
+  }
+
+  doc.end();
+}
+
+function renderProjectToPDF(doc: PDFKit.PDFDocument, project: Project) {
+  doc.addPage();
+  doc.fontSize(20).text(project.name);
+
+  for (const item of project.items || []) {
+    renderDocItemToPDF(doc, item);
+  }
+}
+
+function renderDocItemToPDF(doc: PDFKit.PDFDocument, item: DocItem) {
+  doc.fontSize(16).text(item.name);
+
+  if (item.docBlock?.content) {
+    doc.fontSize(11).text(item.docBlock.content);
+  }
+
+  // Render signature if available
+  if (item.metadata?.signature) {
+    doc.font('Courier').fontSize(10).text(formatSignature(item));
+    doc.font('Helvetica');
+  }
+
+  // Render children recursively
+  for (const child of item.children || []) {
+    doc.moveDown();
+    renderDocItemToPDF(doc, child);
+  }
+}
+```
+
+**Best for**: Offline documentation, compliance requirements, printed manuals
+**Pros**: Portable, no network required, consistent formatting
+**Cons**: No interactivity, harder to search
+
+## Handling Different Languages
+
+Each programming language has unique documentation conventions that should be reflected in rendering.
+
+### TypeScript/JavaScript
+
+```typescript
+function renderTypeScriptItem(item: DocItem): string {
+  const signature = item.metadata?.signature;
+
+  return `
+    <div class="ts-item">
+      <h3>${item.name}</h3>
+      ${item.metadata?.isStatic ? '<span class="badge">static</span>' : ''}
+      ${item.metadata?.isReadonly ? '<span class="badge">readonly</span>' : ''}
+
+      ${signature ? `
+        <pre><code class="language-typescript">
+${formatTypeScriptSignature(item)}
+        </code></pre>
+      ` : ''}
+
+      <div class="description">
+        ${item.docBlock?.content || ''}
+      </div>
+
+      ${renderJSDocTags(item.docBlock?.tags)}
+    </div>
+  `;
+}
+
+function formatTypeScriptSignature(item: DocItem): string {
+  const sig = item.metadata?.signature;
+  if (!sig) return '';
+
+  const params = sig.parameters
+    ?.map(p => `${p.name}: ${p.type?.name || 'any'}`)
+    .join(', ') || '';
+
+  return `${item.kind} ${item.name}(${params}): ${sig.returnType?.name || 'void'}`;
+}
+```
+
+**Key considerations**:
+- Render JSDoc tags (@param, @returns, @example)
+- Show type information prominently
+- Display modifiers (static, readonly, abstract)
+- Link to TypeScript documentation
+
+### Python
+
+```typescript
+function renderPythonItem(item: DocItem): string {
+  return `
+    <div class="py-item">
+      <h3>${item.name}</h3>
+
+      ${item.metadata?.signature ? `
+        <pre><code class="language-python">
+${formatPythonSignature(item)}
+        </code></pre>
+      ` : ''}
+
+      <div class="description">
+        ${item.docBlock?.content || ''}
+      </div>
+
+      ${renderPythonDocstring(item.docBlock)}
+    </div>
+  `;
+}
+
+function formatPythonSignature(item: DocItem): string {
+  const sig = item.metadata?.signature;
+  if (!sig) return '';
+
+  const params = sig.parameters
+    ?.map(p => {
+      const typeHint = p.type?.name ? `: ${p.type.name}` : '';
+      return `${p.name}${typeHint}`;
+    })
+    .join(', ') || '';
+
+  const returnType = sig.returnType?.name ? ` -> ${sig.returnType.name}` : '';
+
+  return `def ${item.name}(${params})${returnType}:`;
+}
+
+function renderPythonDocstring(docBlock?: DocBlock): string {
+  if (!docBlock?.tags) return '';
+
+  // Handle Google, NumPy, or Sphinx style docstrings
+  return `
+    <div class="docstring">
+      ${docBlock.tags.param ? `
+        <h4>Parameters:</h4>
+        <ul>
+          ${docBlock.tags.param.map(p => `
+            <li><code>${p.parameters?.name}</code>: ${p.content}</li>
+          `).join('')}
+        </ul>
+      ` : ''}
+
+      ${docBlock.tags.returns ? `
+        <h4>Returns:</h4>
+        <p>${docBlock.tags.returns[0]}</p>
+      ` : ''}
+    </div>
+  `;
+}
+```
+
+**Key considerations**:
+- Support multiple docstring styles (Google, NumPy, Sphinx)
+- Render type hints from annotations
+- Show decorators if present
+- Link to Python documentation (PEPs, stdlib)
+
+### Go
+
+```typescript
+function renderGoItem(item: DocItem): string {
+  return `
+    <div class="go-item">
+      <h3>${item.name}</h3>
+
+      ${item.metadata?.receiver ? `
+        <span class="badge">receiver: ${item.metadata.receiver}</span>
+      ` : ''}
+
+      ${item.metadata?.signature ? `
+        <pre><code class="language-go">
+${formatGoSignature(item)}
+        </code></pre>
+      ` : ''}
+
+      <div class="description">
+        ${item.docBlock?.content || ''}
+      </div>
+    </div>
+  `;
+}
+
+function formatGoSignature(item: DocItem): string {
+  const sig = item.metadata?.signature;
+  if (!sig) return '';
+
+  const receiver = item.metadata?.receiver ? `(${item.metadata.receiver}) ` : '';
+  const params = sig.parameters
+    ?.map(p => `${p.name} ${p.type?.name || 'interface{}'}`)
+    .join(', ') || '';
+
+  const returnType = sig.returnType?.name || '';
+
+  return `func ${receiver}${item.name}(${params}) ${returnType}`;
+}
+```
+
+**Key considerations**:
+- Show receiver methods properly
+- Display package-level documentation
+- Render Go doc comment conventions
+- Handle embedded interfaces/structs
+
+## Generating Navigation
+
+### Building Navigation from DocItem Tree
+
+```typescript
+interface NavNode {
+  label: string;
+  href: string;
+  children?: NavNode[];
+  kind?: string;
+}
+
+function buildNavigation(items: DocItem[], basePath = ''): NavNode[] {
+  return items.map(item => {
+    const href = `${basePath}#${item.id}`;
+    const node: NavNode = {
+      label: item.name,
+      href,
+      kind: item.kind,
+    };
+
+    if (item.children?.length) {
+      node.children = buildNavigation(item.children, basePath);
+    }
+
+    return node;
+  });
+}
+
+function renderNavigationTree(nodes: NavNode[]): string {
+  return `
+    <ul class="nav-tree">
+      ${nodes.map(node => `
+        <li class="nav-item nav-item--${node.kind}">
+          <a href="${node.href}">${node.label}</a>
+          ${node.children ? renderNavigationTree(node.children) : ''}
+        </li>
+      `).join('')}
+    </ul>
+  `;
+}
+```
+
+### Grouped Navigation
+
+Group items by kind for better organization:
+
+```typescript
+function buildGroupedNavigation(items: DocItem[]): Map<string, NavNode[]> {
+  const groups = new Map<string, NavNode[]>();
+
+  for (const item of items) {
+    const kind = item.kind;
+    if (!groups.has(kind)) {
+      groups.set(kind, []);
+    }
+
+    groups.get(kind)!.push({
+      label: item.name,
+      href: `#${item.id}`,
+      kind: item.kind,
+    });
+  }
+
+  return groups;
+}
+
+function renderGroupedNavigation(items: DocItem[]): string {
+  const groups = buildGroupedNavigation(items);
+
+  return `
+    <nav class="grouped-nav">
+      ${Array.from(groups.entries()).map(([kind, nodes]) => `
+        <section>
+          <h3>${pluralize(kind)}</h3>
+          <ul>
+            ${nodes.map(node => `
+              <li><a href="${node.href}">${node.label}</a></li>
+            `).join('')}
+          </ul>
+        </section>
+      `).join('')}
+    </nav>
+  `;
+}
+```
+
+### Breadcrumbs
+
+Use `parentId` to build breadcrumb navigation:
+
+```typescript
+function buildBreadcrumbs(item: DocItem, allItems: Map<string, DocItem>): NavNode[] {
+  const breadcrumbs: NavNode[] = [];
+  let current: DocItem | undefined = item;
+
+  while (current) {
+    breadcrumbs.unshift({
+      label: current.name,
+      href: `#${current.id}`,
+      kind: current.kind,
+    });
+
+    current = current.parentId ? allItems.get(current.parentId) : undefined;
+  }
+
+  return breadcrumbs;
+}
+
+function renderBreadcrumbs(breadcrumbs: NavNode[]): string {
+  return `
+    <nav aria-label="Breadcrumb" class="breadcrumbs">
+      <ol>
+        ${breadcrumbs.map((crumb, i) => `
+          <li>
+            ${i < breadcrumbs.length - 1
+              ? `<a href="${crumb.href}">${crumb.label}</a>`
+              : `<span aria-current="page">${crumb.label}</span>`
+            }
+          </li>
+        `).join('<li aria-hidden="true">/</li>')}
+      </ol>
+    </nav>
+  `;
+}
+```
+
+## Creating Cross-References
+
+### Link Resolution
+
+```typescript
+function createItemIndex(docSet: DocSet): Map<string, DocItem> {
+  const index = new Map<string, DocItem>();
+
+  function indexItems(items: DocItem[]) {
+    for (const item of items) {
+      index.set(item.id, item);
+      if (item.children) {
+        indexItems(item.children);
+      }
+    }
+  }
+
+  for (const project of docSet.projects) {
+    indexItems(project.items || []);
+  }
+
+  return index;
+}
+
+function resolveReference(ref: string, itemIndex: Map<string, DocItem>): string | null {
+  const item = itemIndex.get(ref);
+  if (!item) return null;
+
+  return `#${item.id}`;
+}
+```
+
+### Rendering Relations
+
+```typescript
+function renderRelations(item: DocItem, itemIndex: Map<string, DocItem>): string {
+  if (!item.relations) return '';
+
+  const parts: string[] = [];
+
+  // Extends
+  if (item.relations.extends) {
+    const refs = Array.isArray(item.relations.extends)
+      ? item.relations.extends
+      : [item.relations.extends];
+
+    parts.push(`
+      <div class="relation">
+        <strong>Extends:</strong>
+        ${refs.map(ref => renderRelationLink(ref, itemIndex)).join(', ')}
+      </div>
+    `);
+  }
+
+  // Implements
+  if (item.relations.implements) {
+    const refs = Array.isArray(item.relations.implements)
+      ? item.relations.implements
+      : [item.relations.implements];
+
+    parts.push(`
+      <div class="relation">
+        <strong>Implements:</strong>
+        ${refs.map(ref => renderRelationLink(ref, itemIndex)).join(', ')}
+      </div>
+    `);
+  }
+
+  return parts.join('');
+}
+
+function renderRelationLink(
+  ref: string | { target: string; [key: string]: any },
+  itemIndex: Map<string, DocItem>
+): string {
+  const target = typeof ref === 'string' ? ref : ref.target;
+  const href = resolveReference(target, itemIndex);
+
+  if (href) {
+    return `<a href="${href}"><code>${target}</code></a>`;
+  }
+
+  // External reference (not in this DocSet)
+  return `<code>${target}</code>`;
+}
+```
+
+### Smart Linking in Content
+
+Automatically link type references in descriptions:
+
+```typescript
+function autoLinkContent(
+  content: string,
+  itemIndex: Map<string, DocItem>
+): string {
+  // Find potential type references (CamelCase words)
+  return content.replace(/\b([A-Z][a-zA-Z0-9]*)\b/g, (match, typeName) => {
+    // Search for matching item in index
+    const item = Array.from(itemIndex.values()).find(
+      item => item.name === typeName && item.kind.includes('class', 'interface', 'type')
+    );
+
+    if (item) {
+      return `<a href="#${item.id}"><code>${typeName}</code></a>`;
+    }
+
+    return match;
+  });
+}
+```
+
+## Syntax Highlighting
+
+### Using Prism.js
+
+```typescript
+import Prism from 'prismjs';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-go';
+
+function highlightSignature(item: DocItem): string {
+  const signature = formatSignature(item);
+  const language = getLanguageForHighlighting(item.language);
+
+  const highlighted = Prism.highlight(
+    signature,
+    Prism.languages[language],
+    language
+  );
+
+  return `<pre><code class="language-${language}">${highlighted}</code></pre>`;
+}
+
+function getLanguageForHighlighting(language: string): string {
+  const mapping: Record<string, string> = {
+    'typescript': 'typescript',
+    'javascript': 'javascript',
+    'python': 'python',
+    'go': 'go',
+    'rust': 'rust',
+  };
+
+  return mapping[language] || 'text';
+}
+```
+
+### Using Shiki
+
+For more accurate syntax highlighting:
+
+```typescript
+import { getHighlighter } from 'shiki';
+
+const highlighter = await getHighlighter({
+  themes: ['github-dark', 'github-light'],
+  langs: ['typescript', 'python', 'go', 'rust'],
+});
+
+function highlightCode(code: string, language: string): string {
+  return highlighter.codeToHtml(code, {
+    lang: language,
+    themes: {
+      light: 'github-light',
+      dark: 'github-dark',
+    },
+  });
+}
+```
+
+## Responsive Design Patterns
+
+### Mobile-First Navigation
+
+```typescript
+function renderResponsiveLayout(project: Project): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          .layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+
+          @media (min-width: 768px) {
+            .layout {
+              grid-template-columns: 250px 1fr;
+            }
+          }
+
+          @media (min-width: 1024px) {
+            .layout {
+              grid-template-columns: 250px 1fr 200px;
+            }
+          }
+
+          .sidebar {
+            position: sticky;
+            top: 1rem;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+          }
+
+          @media (max-width: 767px) {
+            .sidebar {
+              position: fixed;
+              top: 0;
+              left: -100%;
+              width: 80%;
+              height: 100vh;
+              background: white;
+              transition: left 0.3s;
+              z-index: 100;
+            }
+
+            .sidebar.open {
+              left: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="layout">
+          <aside class="sidebar">
+            ${renderNavigation(project)}
+          </aside>
+          <main class="content">
+            ${renderContent(project)}
+          </main>
+          <aside class="toc">
+            ${renderTableOfContents(project)}
+          </aside>
+        </div>
+      </body>
+    </html>
+  `;
+}
+```
+
+### Responsive Tables
+
+Documentation often includes parameter tables that need special handling on mobile:
+
+```typescript
+function renderParameterTable(params: any[]): string {
+  return `
+    <div class="table-responsive">
+      <table class="params-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${params.map(p => `
+            <tr>
+              <td data-label="Name"><code>${p.name}</code></td>
+              <td data-label="Type"><code>${p.type?.name || 'any'}</code></td>
+              <td data-label="Description">${p.description || ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <style>
+      @media (max-width: 640px) {
+        .params-table thead {
+          display: none;
+        }
+
+        .params-table tr {
+          display: block;
+          margin-bottom: 1rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+        }
+
+        .params-table td {
+          display: flex;
+          justify-content: space-between;
+          padding: 0.5rem;
+          border-bottom: 1px solid #eee;
+        }
+
+        .params-table td::before {
+          content: attr(data-label);
+          font-weight: bold;
+          margin-right: 1rem;
+        }
+      }
+    </style>
+  `;
+}
+```
+
+## Accessibility Considerations
+
+### Semantic HTML
+
+```typescript
+function renderAccessibleDocItem(item: DocItem): string {
+  return `
+    <article
+      id="${item.id}"
+      aria-labelledby="heading-${item.id}"
+      role="article"
+    >
+      <header>
+        <h2 id="heading-${item.id}">
+          ${item.name}
+          <a
+            href="#${item.id}"
+            aria-label="Permalink to ${item.name}"
+            class="permalink"
+          >
+            #
+          </a>
+        </h2>
+
+        <div class="metadata" role="complementary">
+          <span class="kind">${item.kind}</span>
+          ${item.location ? `
+            <a
+              href="${getSourceUrl(item)}"
+              aria-label="View source for ${item.name}"
+            >
+              View Source
+            </a>
+          ` : ''}
+        </div>
+      </header>
+
+      <div class="description">
+        ${item.docBlock?.content || ''}
+      </div>
+
+      ${item.children?.length ? `
+        <section aria-labelledby="members-${item.id}">
+          <h3 id="members-${item.id}">Members</h3>
+          ${item.children.map(renderAccessibleDocItem).join('')}
+        </section>
+      ` : ''}
+    </article>
+  `;
+}
+```
+
+### Keyboard Navigation
+
+```typescript
+function addKeyboardNavigation() {
+  return `
+    <script>
+      // Navigate between items with arrow keys
+      document.addEventListener('keydown', (e) => {
+        const currentItem = document.activeElement.closest('article');
+        if (!currentItem) return;
+
+        let nextItem;
+
+        if (e.key === 'ArrowDown') {
+          nextItem = currentItem.nextElementSibling;
+        } else if (e.key === 'ArrowUp') {
+          nextItem = currentItem.previousElementSibling;
+        }
+
+        if (nextItem?.tagName === 'ARTICLE') {
+          e.preventDefault();
+          const heading = nextItem.querySelector('h2');
+          heading?.focus();
+        }
+      });
+
+      // Skip navigation
+      document.addEventListener('DOMContentLoaded', () => {
+        const skipLink = document.createElement('a');
+        skipLink.href = '#main-content';
+        skipLink.textContent = 'Skip to main content';
+        skipLink.className = 'skip-link';
+        document.body.insertBefore(skipLink, document.body.firstChild);
+      });
+    </script>
+
+    <style>
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: #000;
+        color: #fff;
+        padding: 8px;
+        text-decoration: none;
+        z-index: 100;
+      }
+
+      .skip-link:focus {
+        top: 0;
+      }
+    </style>
+  `;
+}
+```
+
+### Screen Reader Support
+
+```typescript
+function renderScreenReaderAnnouncements(): string {
+  return `
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      class="sr-only"
+      id="sr-announcements"
+    ></div>
+
+    <script>
+      function announce(message) {
+        const announcer = document.getElementById('sr-announcements');
+        announcer.textContent = message;
+
+        // Clear after announcement
+        setTimeout(() => {
+          announcer.textContent = '';
+        }, 1000);
+      }
+
+      // Announce when navigating to a new item
+      window.addEventListener('hashchange', () => {
+        const id = window.location.hash.slice(1);
+        const item = document.getElementById(id);
+
+        if (item) {
+          const heading = item.querySelector('h2');
+          if (heading) {
+            announce(\`Navigated to \${heading.textContent}\`);
+          }
+        }
+      });
+    </script>
+
+    <style>
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+      }
+    </style>
+  `;
+}
+```
+
+### ARIA Labels and Roles
+
+```typescript
+function renderAccessibleNavigation(items: DocItem[]): string {
+  return `
+    <nav aria-label="API documentation navigation">
+      <ul role="tree" aria-label="Documentation tree">
+        ${items.map(item => `
+          <li role="treeitem" aria-expanded="${item.children ? 'true' : 'false'}">
+            <a href="#${item.id}" tabindex="0">
+              ${item.name}
+              <span class="sr-only">${item.kind}</span>
+            </a>
+            ${item.children ? `
+              <ul role="group">
+                ${renderAccessibleNavigation(item.children)}
+              </ul>
+            ` : ''}
+          </li>
+        `).join('')}
+      </ul>
+    </nav>
+  `;
+}
+```
+
+## Performance Optimization
+
+### Lazy Loading Content
+
+```typescript
+function renderLazyLoadedContent(project: Project): string {
+  return `
+    <div id="content-container"></div>
+
+    <script>
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const itemId = entry.target.dataset.itemId;
+            loadItemContent(itemId);
+            observer.unobserve(entry.target);
+          }
+        });
+      });
+
+      function loadItemContent(itemId) {
+        fetch(\`/api/items/\${itemId}\`)
+          .then(res => res.json())
+          .then(item => {
+            const element = document.querySelector(\`[data-item-id="\${itemId}"]\`);
+            element.innerHTML = renderDocItem(item);
+          });
+      }
+
+      // Observe all lazy-loadable items
+      document.querySelectorAll('[data-lazy-load]').forEach(el => {
+        observer.observe(el);
+      });
+    </script>
+  `;
+}
+```
+
+### Caching Strategies
+
+```typescript
+class DocumentationCache {
+  private cache = new Map<string, DocItem>();
+  private ttl = 60 * 60 * 1000; // 1 hour
+
+  async getItem(id: string): Promise<DocItem | null> {
+    const cached = this.cache.get(id);
+    if (cached) return cached;
+
+    const item = await this.fetchItem(id);
+    if (item) {
+      this.cache.set(id, item);
+      setTimeout(() => this.cache.delete(id), this.ttl);
+    }
+
+    return item;
+  }
+
+  private async fetchItem(id: string): Promise<DocItem | null> {
+    // Fetch from API or file system
+    return null;
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Platform Examples" icon="code" href="/building/documenters/examples">
+    See real-world integration examples
+  </Card>
+  <Card title="Consuming Data" icon="database" href="/building/documenters/consuming">
+    Learn to parse and traverse opendocs.json
+  </Card>
+  <Card title="UI Components" icon="palette" href="/building/ui-components/overview">
+    Build reusable rendering components
+  </Card>
+  <Card title="Specification" icon="book" href="/specification/overview">
+    Reference the OpenDocs format
+  </Card>
+</CardGroup>
