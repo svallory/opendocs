@@ -30,6 +30,10 @@ export { RelationUtils, RelationKind } from './Relation';
 export { DocBlockUtils } from './DocBlock';
 export { CommonTags } from './DocTag';
 
+// Validation
+export { validateDocSet, assertValidDocSet } from './validation';
+export type { ValidationResult } from './validation';
+
 // Version
 export const VERSION = '0.2.0';
 export const SPEC_VERSION = '0.2.0';
