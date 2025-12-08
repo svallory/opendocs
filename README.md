@@ -68,14 +68,31 @@ Extracts from Go using built-in ast/parser/doc packages.
 opendocs-extract-go extract --source ./pkg --output ./docs/opendocs.json
 ```
 
-## OpenDocs Specification
+## Documentation
 
-The extractors follow the [OpenDocs specification](https://mint-tsdocs.saulo.engineer/opendocs.md):
+Comprehensive documentation is available at [mint-tsdocs.saulo.engineer](https://mint-tsdocs.saulo.engineer):
 
-- [Overview](https://mint-tsdocs.saulo.engineer/opendocs.md)
-- [Design Principles](https://mint-tsdocs.saulo.engineer/opendocs/design-principles.md)
-- [Data Model](https://mint-tsdocs.saulo.engineer/opendocs/opendocs-model.md)
-- [File Organization](https://mint-tsdocs.saulo.engineer/opendocs/opendocs-file-organization.md)
+### Specification
+- [OpenDocs Overview](https://mint-tsdocs.saulo.engineer/specification/overview)
+- [Design Principles](https://mint-tsdocs.saulo.engineer/specification/design-principles)
+- [Data Model](https://mint-tsdocs.saulo.engineer/specification/data-model)
+- [File Organization](https://mint-tsdocs.saulo.engineer/specification/file-organization)
+
+### Building with OpenDocs
+- **Documenters**: Build documentation generators
+  - [Overview](https://mint-tsdocs.saulo.engineer/building/documenters/overview) - Architecture patterns
+  - [Consuming Data](https://mint-tsdocs.saulo.engineer/building/documenters/consuming) - Parsing and traversal
+  - [Rendering](https://mint-tsdocs.saulo.engineer/building/documenters/rendering) - Output generation
+  - [Examples](https://mint-tsdocs.saulo.engineer/building/documenters/examples) - Platform integrations
+
+- **Extractors**: Build language extractors
+  - [Overview](https://mint-tsdocs.saulo.engineer/building/extractors/overview) - Architecture guide
+  - [Implementation](https://mint-tsdocs.saulo.engineer/building/extractors/implementation) - Step-by-step guide
+  - [Validation](https://mint-tsdocs.saulo.engineer/building/extractors/validation) - Testing strategies
+
+- **UI Components**: Build documentation UI
+  - [Overview](https://mint-tsdocs.saulo.engineer/building/ui-components/overview) - Component patterns
+  - [Examples](https://mint-tsdocs.saulo.engineer/building/ui-components/examples) - React, Vue, Web Components
 
 ## Output Format
 
@@ -99,10 +116,21 @@ All extractors generate an `opendocs.json` file with this structure:
           "name": "MyClass",
           "kind": "class",
           "docBlock": {
-            "description": "...",
-            "tags": [...]
+            "content": "Class description...",
+            "tags": {
+              "param": [...],
+              "returns": [...]
+            }
           },
-          "items": [...]
+          "children": [
+            {
+              "id": "MyClass#myMethod",
+              "name": "myMethod",
+              "kind": "method",
+              "parentId": "MyClass",
+              "docBlock": { "content": "..." }
+            }
+          ]
         }
       ]
     }
@@ -205,15 +233,26 @@ opendocs/
 
 ## Roadmap
 
+### Completed ✅
 - [x] TypeScript/JavaScript extractor
 - [x] Python extractor
 - [x] Go extractor
+- [x] JSON Schema validation
+- [x] Comprehensive documentation (Specification, Building guides, Examples)
+- [x] Model libraries (TypeScript, Python, Go)
+- [x] Updated data model (parentId, children, content fields)
+
+### In Progress 🚧
+- [ ] Documentation renderer/generator
+- [ ] CI/CD integration examples
+
+### Planned 📋
 - [ ] Rust extractor
 - [ ] Java extractor
 - [ ] C# extractor
-- [ ] JSON Schema validation
-- [ ] Documentation renderer/generator
-- [ ] CI/CD integration examples
+- [ ] Mintlify plugin
+- [ ] Astro integration
+- [ ] Docusaurus plugin
 
 ## Contributing
 
