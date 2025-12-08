@@ -11,7 +11,7 @@
     "packages/*"
   ],
   "scripts": {
-    "deps": "pnpm update -i --latest -r",
+    "deps": "bun update --latest",
     "moon": "moon --color --log trace"
   },
   "devDependencies": {
@@ -32,7 +32,7 @@
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": "20.11.0"
-  },
-  "packageManager": "yarn@4.0.2"
+    "bun": ">=1.2.0",
+    "node": "~20"
+  }
 }
