@@ -188,18 +188,16 @@ function extractClass(
     kind: ItemKind.CLASS,
     language: SupportedLanguages.TYPESCRIPT,
     location: getLocation(node, sourceFile, context.projectRoot),
-    relations: {
-      container: context.packageName,
-    },
     docBlock: extractDocBlock(node),
-    items: [],
+    children: [],
   };
 
   // Extract members
   node.members.forEach((member) => {
     const memberItem = extractClassMember(member, sourceFile, checker, nestedContext);
     if (memberItem) {
-      item.items?.push(memberItem);
+      memberItem.parentId = fqn;
+      item.children?.push(memberItem);
     }
   });
 
@@ -244,9 +242,6 @@ function extractMethod(
     kind: ItemKind.METHOD,
     language: SupportedLanguages.TYPESCRIPT,
     location: getLocation(node, sourceFile, context.projectRoot),
-    relations: {
-      container: context.parentIds[context.parentIds.length - 1] || context.packageName,
-    },
     docBlock: extractDocBlock(node),
     metadata: {
       visibility: getVisibility(node),
@@ -277,9 +272,6 @@ function extractProperty(
     kind: ItemKind.PROPERTY,
     language: SupportedLanguages.TYPESCRIPT,
     location: getLocation(node, sourceFile, context.projectRoot),
-    relations: {
-      container: context.parentIds[context.parentIds.length - 1] || context.packageName,
-    },
     docBlock: extractDocBlock(node),
     metadata: {
       visibility: getVisibility(node),
@@ -307,9 +299,6 @@ function extractConstructor(
     kind: ItemKind.CONSTRUCTOR,
     language: SupportedLanguages.TYPESCRIPT,
     location: getLocation(node, sourceFile, context.projectRoot),
-    relations: {
-      container: context.parentIds[context.parentIds.length - 1] || context.packageName,
-    },
     docBlock: extractDocBlock(node),
     metadata: {
       visibility: getVisibility(node),
@@ -338,9 +327,6 @@ function extractFunction(
     kind: ItemKind.FUNCTION,
     language: SupportedLanguages.TYPESCRIPT,
     location: getLocation(node, sourceFile, context.projectRoot),
-    relations: {
-      container: context.packageName,
-    },
     docBlock: extractDocBlock(node),
     metadata: {
       signature: {
@@ -375,26 +361,21 @@ function extractInterface(
     kind: ItemKind.INTERFACE,
     language: SupportedLanguages.TYPESCRIPT,
     location: getLocation(node, sourceFile, context.projectRoot),
-    relations: {
-      container: context.packageName,
-    },
     docBlock: extractDocBlock(node),
-    items: [],
+    children: [],
   };
 
   // Extract members
   node.members.forEach((member) => {
     if (ts.isPropertySignature(member) && member.name && ts.isIdentifier(member.name)) {
       const memberFQN = buildFQN(nestedContext, member.name.text);
-      item.items?.push({
+      item.children?.push({
         id: memberFQN,
         name: member.name.text,
         kind: ItemKind.PROPERTY,
         language: SupportedLanguages.TYPESCRIPT,
         location: getLocation(member, sourceFile, context.projectRoot),
-        relations: {
-          container: fqn,
-        },
+        parentId: fqn,
         docBlock: extractDocBlock(member),
         metadata: {
           type: member.type ? { name: member.type.getText() } : undefined,
@@ -430,26 +411,21 @@ function extractEnum(
     kind: ItemKind.ENUM,
     language: SupportedLanguages.TYPESCRIPT,
     location: getLocation(node, sourceFile, context.projectRoot),
-    relations: {
-      container: context.packageName,
-    },
     docBlock: extractDocBlock(node),
-    items: [],
+    children: [],
   };
 
   // Extract enum members
   node.members.forEach((member) => {
     if (ts.isIdentifier(member.name)) {
       const memberFQN = buildFQN(nestedContext, member.name.text);
-      item.items?.push({
+      item.children?.push({
         id: memberFQN,
         name: member.name.text,
         kind: ItemKind.ENUM_MEMBER,
         language: SupportedLanguages.TYPESCRIPT,
         location: getLocation(member, sourceFile, context.projectRoot),
-        relations: {
-          container: fqn,
-        },
+        parentId: fqn,
         docBlock: extractDocBlock(member),
       });
     }
@@ -476,9 +452,6 @@ function extractTypeAlias(
     kind: ItemKind.TYPE_ALIAS,
     language: SupportedLanguages.TYPESCRIPT,
     location: getLocation(node, sourceFile, context.projectRoot),
-    relations: {
-      container: context.packageName,
-    },
     docBlock: extractDocBlock(node),
     metadata: {
       type: { name: node.type.getText() },
@@ -499,14 +472,14 @@ function extractDocBlock(node: ts.Node): DocBlock | undefined {
 
   const docBlock: DocBlock = {};
 
-  // Extract description from JSDoc comment
+  // Extract content from JSDoc comment
   for (const comment of jsDocComments) {
     if (ts.isJSDoc(comment) && comment.comment) {
       const commentText =
         typeof comment.comment === 'string'
           ? comment.comment
           : comment.comment.map((c) => c.text).join('');
-      docBlock.description = commentText;
+      docBlock.content = commentText;
       break;
     }
   }
@@ -564,7 +537,7 @@ function extractDocBlock(node: ts.Node): DocBlock | undefined {
     docBlock.tags = tags;
   }
 
-  return docBlock.description || docBlock.tags ? docBlock : undefined;
+  return docBlock.content || docBlock.tags ? docBlock : undefined;
 }
 
 /**
