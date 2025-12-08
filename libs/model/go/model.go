@@ -132,8 +132,11 @@ type DocItem struct {
 	// DocBlock contains documentation content
 	DocBlock *DocBlock `json:"docBlock,omitempty"`
 
-	// Items contains child items
-	Items []DocItem `json:"items,omitempty"`
+	// ParentID is the parent item ID (for establishing hierarchy)
+	ParentID *string `json:"parentId,omitempty"`
+
+	// Children contains child items
+	Children []DocItem `json:"children,omitempty"`
 
 	// Visibility is the access level (public, private, protected, internal)
 	Visibility string `json:"visibility,omitempty"`
@@ -178,8 +181,8 @@ type Relations map[string]interface{}
 
 // DocBlock represents structured documentation content
 type DocBlock struct {
-	// Description is the main description/summary
-	Description string `json:"description,omitempty"`
+	// Content is the main description/summary
+	Content string `json:"content,omitempty"`
 
 	// Remarks contains extended remarks or detailed description
 	Remarks string `json:"remarks,omitempty"`
