@@ -50,7 +50,7 @@ class DocTag(TypedDict, total=False):
 class DocBlock(TypedDict, total=False):
     """Structured documentation content."""
 
-    description: NotRequired[str]
+    content: NotRequired[str]
     remarks: NotRequired[str]
     tags: NotRequired[Dict[str, List[Any]]]  # Record<string, (string | DocTag)[]>
     examples: NotRequired[List[str]]
@@ -135,7 +135,8 @@ class DocItem(TypedDict, total=False):
     location: NotRequired[Location]
     relations: NotRequired[Relations]  # Code relationships (container, extends, implements, etc.)
     docBlock: NotRequired[DocBlock]
-    items: NotRequired[List["DocItem"]]
+    parent_id: NotRequired[str]  # Parent item ID (for establishing hierarchy)
+    children: NotRequired[List["DocItem"]]
     metadata: NotRequired[Dict[str, Any]]  # Language-specific metadata (visibility, signature, etc.)
     ref: NotRequired[str]  # $ref
 
