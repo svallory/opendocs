@@ -3111,4 +3111,110 @@ export {};
       .join('');
   }
 
+  // ====================================================================
+  // DocItem Helper Methods (for OpenDocs migration)
+  // ====================================================================
+
+  /**
+   * Get icon for DocItem based on kind
+   */
+  private _getIconForDocItem(docItem: DocItem): string {
+    return MarkdownDocumenter.ITEM_ICONS[docItem.kind] || 'file';
+  }
+
+  /**
+   * Get description from DocItem's docBlock
+   */
+  private _getDescriptionForDocItem(docItem: DocItem): string | undefined {
+    return docItem.docBlock?.description;
+  }
+
+  /**
+   * Build breadcrumb for DocItem
+   */
+  private _buildBreadcrumbForDocItem(docItem: DocItem): string[] {
+    const breadcrumb: string[] = [];
+    let current: DocItem | undefined = docItem;
+
+    // Build breadcrumb by traversing parent chain
+    while (current) {
+      breadcrumb.unshift(current.name);
+      // Find parent by parentId
+      current = current.parentId ? this._findDocItemById(current.parentId) : undefined;
+    }
+
+    return breadcrumb;
+  }
+
+  /**
+   * Build navigation info for DocItem
+   */
+  private _buildNavigationInfoForDocItem(docItem: DocItem): any {
+    // For now, return undefined - navigation is handled separately
+    return undefined;
+  }
+
+  /**
+   * Get page title for DocItem
+   */
+  private _getPageTitleForDocItem(docItem: DocItem): string {
+    return docItem.name;
+  }
+
+  /**
+   * Get link filename for a DocItem by ID
+   */
+  private _getLinkFilenameForDocItem(itemId: string): string | undefined {
+    const item = this._findDocItemById(itemId);
+    if (!item) return undefined;
+    return this._getFilenameForDocItem(item);
+  }
+
+  /**
+   * Get filename for DocItem
+   */
+  private _getFilenameForDocItem(docItem: DocItem): string {
+    // Create filename from item kind and name
+    const baseName = Utilities.normalizeDisplayName(docItem.name);
+    return `${baseName}.mdx`;
+  }
+
+  /**
+   * Add DocItem to navigation
+   */
+  private _addToNavigationForDocItem(docItem: DocItem, filename: string, parentFilename?: string): void {
+    const navigationItem: NavigationItem = {
+      title: docItem.name,
+      path: path.relative(this._outputFolder, filename).replace(/\\/g, '/').replace(/\.mdx$/, ''),
+      icon: this._getIconForDocItem(docItem)
+    };
+
+    this._navigationManager.addItem(navigationItem);
+  }
+
+  /**
+   * Find a DocItem by ID within the DocSet
+   */
+  private _findDocItemById(id: string): DocItem | undefined {
+    for (const project of this._docSet.projects) {
+      const found = this._findDocItemByIdRecursive(id, project.items || []);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  /**
+   * Recursively search for DocItem by ID
+   */
+  private _findDocItemByIdRecursive(id: string, items: DocItem[]): DocItem | undefined {
+    for (const item of items) {
+      if (item.id === id) return item;
+      if (item.children) {
+        const found = this._findDocItemByIdRecursive(id, item.children);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  }
+
 }
