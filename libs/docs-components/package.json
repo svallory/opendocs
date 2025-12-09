@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:main && npm run build:model-diagram && npm run build:feature-explorer && npm run build:full-model-explorer",
+    "build": "bun run build:main && bun run build:model-diagram && bun run build:feature-explorer && bun run build:full-model-explorer",
     "build:main": "CLEAN_DIST=true vite build",
     "build:model-diagram": "ENTRY=src/components-entry/model-diagram.jsx LIB_NAME=ModelDiagram FILE_NAME=model-diagram vite build",
     "build:feature-explorer": "ENTRY=src/components-entry/feature-explorer.jsx LIB_NAME=FeatureExplorer FILE_NAME=feature-explorer vite build",

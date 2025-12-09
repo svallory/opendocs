@@ -1,0 +1,49 @@
+---
+title: "Utilities class"
+icon: "box"
+description: "Utilities API documentation"
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# Utilities
+## Signature
+
+```typescript
+export declare class Utilities 
+```
+
+## Constructors
+
+*No constructors defined.*
+
+## Properties
+
+*No properties defined.*
+
+## Methods
+
+### getConciseSignature
+**Modifiers**: static
+
+Generates a concise signature for a function. Example: "getArea(width, height)"
+
+### getSafeFilenameForName
+**Modifiers**: static
+
+Converts bad filename characters to underscores. Sanitizes input for safe filesystem use without strict validation.This function is designed for API Extractor output (valid identifiers) and applies minimal sanitization to ensure filesystem compatibility.
+
+### getSafeFilenamePreservingCase
+**Modifiers**: static
+
+Converts bad filename characters to underscores while preserving original casing. Sanitizes input for safe filesystem use without strict validation. Used for nested folder structure where case-sensitive names are desired.This function is designed for API Extractor output (valid identifiers) and applies minimal sanitization to ensure filesystem compatibility.
+
+### normalizeDisplayName
+**Modifiers**: static
+
+Normalize display name to remove parentheses from constructors API Extractor returns "(constructor)" but we want to display "constructor"
+
+## Events
+
+*No events defined.*

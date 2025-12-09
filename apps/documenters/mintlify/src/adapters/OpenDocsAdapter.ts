@@ -53,7 +53,12 @@ export class OpenDocsAdapter {
         isBeta: this._isBeta(item),
         releaseTag: this._getReleaseTag(item),
       },
-      page: options,
+      page: {
+        title: options.pageTitle,
+        description: options.pageDescription,
+        icon: options.pageIcon,
+        breadcrumb: options.breadcrumb,
+      },
       navigation: options.navigation,
       examples: this._getExamples(resolvedItem),
       heritageTypes: this._getHeritageTypes(item, options.getLinkFilenameForApiItem),
@@ -103,14 +108,18 @@ export class OpenDocsAdapter {
     if (!source) return target;
     if (!target) return source;
 
+    const mergedTags = {
+      ...source.tags,
+      ...target.tags,
+    };
+    // Remove inheritDoc tag after resolution
+    if (mergedTags) {
+      delete mergedTags.inheritDoc;
+    }
+
     return {
       content: target.content || source.content,
-      tags: {
-        ...source.tags,
-        ...target.tags,
-        // Remove inheritDoc tag after resolution
-        inheritDoc: undefined,
-      },
+      tags: mergedTags,
     };
   }
 
@@ -212,7 +221,7 @@ export class OpenDocsAdapter {
     const exampleTags = item.docBlock?.tags?.['example'];
     if (!exampleTags) return [];
 
-    return exampleTags.map((tag) =>
+    return exampleTags.map((tag: any) =>
       typeof tag === 'string' ? tag : (tag as any).content
     );
   }
@@ -295,33 +304,33 @@ export class OpenDocsAdapter {
     switch (item.kind) {
       case 'class':
         data.constructors = this._createTableRows(
-          children.filter((c) => c.kind === 'constructor'),
+          children.filter((c: DocItem) => c.kind === 'constructor'),
           getLinkFilename
         );
         data.properties = this._createTableRows(
-          children.filter((c) => c.kind === 'property'),
+          children.filter((c: DocItem) => c.kind === 'property'),
           getLinkFilename
         );
         data.methods = this._createTableRows(
-          children.filter((c) => c.kind === 'method'),
+          children.filter((c: DocItem) => c.kind === 'method'),
           getLinkFilename
         );
         break;
 
       case 'interface':
         data.properties = this._createTableRows(
-          children.filter((c) => c.kind === 'property'),
+          children.filter((c: DocItem) => c.kind === 'property'),
           getLinkFilename
         );
         data.methods = this._createTableRows(
-          children.filter((c) => c.kind === 'method'),
+          children.filter((c: DocItem) => c.kind === 'method'),
           getLinkFilename
         );
         break;
 
       case 'enum':
         data.members = this._createTableRows(
-          children.filter((c) => c.kind === 'enumMember'),
+          children.filter((c: DocItem) => c.kind === 'enumMember'),
           getLinkFilename
         );
         break;
@@ -343,27 +352,27 @@ export class OpenDocsAdapter {
       case 'module':
         // For namespace/module, categorize children
         data.classes = this._createTableRows(
-          children.filter((c) => c.kind === 'class'),
+          children.filter((c: DocItem) => c.kind === 'class'),
           getLinkFilename
         );
         data.interfaces = this._createTableRows(
-          children.filter((c) => c.kind === 'interface'),
+          children.filter((c: DocItem) => c.kind === 'interface'),
           getLinkFilename
         );
         data.functions = this._createTableRows(
-          children.filter((c) => c.kind === 'function'),
+          children.filter((c: DocItem) => c.kind === 'function'),
           getLinkFilename
         );
         data.enumerations = this._createTableRows(
-          children.filter((c) => c.kind === 'enum'),
+          children.filter((c: DocItem) => c.kind === 'enum'),
           getLinkFilename
         );
         data.typeAliases = this._createTableRows(
-          children.filter((c) => c.kind === 'typeAlias'),
+          children.filter((c: DocItem) => c.kind === 'typeAlias'),
           getLinkFilename
         );
         data.variables = this._createTableRows(
-          children.filter((c) => c.kind === 'variable'),
+          children.filter((c: DocItem) => c.kind === 'variable'),
           getLinkFilename
         );
         break;
@@ -407,7 +416,7 @@ export class OpenDocsAdapter {
 
     return parameters.map((param: any) => {
       // Find matching @param tag
-      const paramTag = paramTags.find((tag) => {
+      const paramTag = paramTags.find((tag: any) => {
         if (typeof tag === 'string') return false;
         return (tag as any).parameters?.name === param.name;
       });

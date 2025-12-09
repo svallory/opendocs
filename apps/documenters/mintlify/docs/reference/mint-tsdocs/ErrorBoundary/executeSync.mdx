@@ -1,0 +1,44 @@
+---
+title: "executeSync"
+icon: "function"
+description: "Execute a synchronous function with error boundary protection."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# executeSync
+
+## Summary
+
+Execute a synchronous function with error boundary protection.  
+## Signature
+
+```typescript
+executeSync<T>(operation: () => T, context?: ErrorContext, fallback?: () => T): ErrorResult<T>;
+```
+
+## Parameters
+
+### operation
+**Type**:`() => T`
+
+The function to execute
+
+### context
+**Type**:<RefLink target="mint-tsdocs.ErrorContext">`ErrorContext`</RefLink>
+**Optional**: Yes
+
+Context information for error reporting
+
+### fallback
+**Type**:`() => T`
+**Optional**: Yes
+
+Optional fallback function to try on error
+
+## Returns
+
+**Type**:<RefLink target="mint-tsdocs.ErrorResult">`ErrorResult<T>`</RefLink>
+
+Execute a synchronous function with error boundary protection.

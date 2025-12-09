@@ -1,4 +1,4 @@
-import Ajv, { ValidateFunction, ErrorObject } from 'ajv';
+import Ajv, { ValidateFunction } from 'ajv';
 import { DocSet } from './DocSet';
 
 // Import the schema - will be copied during build
@@ -75,8 +75,11 @@ export function validateDocSet(docSet: unknown): ValidationResult {
     // Convert params to Record<string, unknown>
     const params = error.params as Record<string, unknown>;
 
+    // Handle different error object types - some may not have instancePath
+    const path = (error as any).instancePath || (error as any).dataPath || 'root';
+
     return {
-      path: error.instancePath || 'root',
+      path,
       message: error.message || 'Validation error',
       keyword: error.keyword,
       params,

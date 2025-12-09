@@ -221,8 +221,8 @@ export class GenerateAction extends BaseAction {
       FileSystem.ensureFolder(tsdocsDir);
 
       // Step 4: Validate and compile TypeScript
-      // Determine tsconfig path from config or auto-detect
-      const tsconfigPath = config.tsconfigPath || this._findTsConfig(projectDir);
+      // Auto-detect tsconfig path
+      const tsconfigPath = this._findTsConfig(projectDir);
       await this._validateAndCompileTypeScript(projectDir, tsconfigPath);
 
       // Step 5: Determine opendocs.json path

@@ -6,12 +6,10 @@ export function ClassNode({ data }) {
   const {
     name,
     color,
-    bgColor,
     properties,
     kind,
     showKind = false,
     highlighted = false,
-    feature = null,
     onPropertyClick = null
   } = data
 

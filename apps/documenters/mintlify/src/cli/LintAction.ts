@@ -209,8 +209,8 @@ export class LintAction extends CommandLineAction {
     isFileFilter?: boolean
   ): void {
     // Apply path filter if specified
-    if (pathFilter && item.source?.file) {
-      const normalizedSourcePath = path.resolve(item.source.file);
+    if (pathFilter && item.location?.path) {
+      const normalizedSourcePath = path.resolve(item.location.path);
       if (isFileFilter) {
         // For file filter, only include issues from the exact file
         if (normalizedSourcePath !== pathFilter) {
@@ -225,7 +225,7 @@ export class LintAction extends CommandLineAction {
     }
 
     // Check for missing documentation
-    if (!item.docBlock || !item.docBlock.description) {
+    if (!item.docBlock || !item.docBlock.content) {
       this._addIssue(
         item,
         `Missing documentation for ${item.kind} '${item.name}'`,
@@ -241,7 +241,8 @@ export class LintAction extends CommandLineAction {
     }
 
     // Check for missing return type description (for functions/methods)
-    if ((item.kind === 'function' || item.kind === 'method') && item.signature?.returnType) {
+    const signature = item.metadata?.signature as any;
+    if ((item.kind === 'function' || item.kind === 'method') && signature?.returnType) {
       this._checkReturnDocs(item, issueGroups, ungroupedIssues);
     }
 
@@ -261,18 +262,19 @@ export class LintAction extends CommandLineAction {
     issueGroups: Map<string, IssueMessage[]>,
     ungroupedIssues: IssueMessage[]
   ): void {
-    if (!item.signature?.parameters) return;
+    const signature = item.metadata?.signature as any;
+    if (!signature?.parameters) return;
 
-    const paramTags = item.docBlock?.tags?.filter(tag => tag.name === '@param') || [];
+    const paramTags = item.docBlock?.tags?.['param'] || [];
     const documentedParams = new Set(
-      paramTags.map(tag => {
+      paramTags.map((tag: any) => {
         // Extract parameter name from tag value (e.g., "paramName - description")
         const match = tag.value?.match(/^(\w+)/);
         return match ? match[1] : '';
       })
     );
 
-    for (const param of item.signature.parameters) {
+    for (const param of signature.parameters) {
       if (!documentedParams.has(param.name)) {
         this._addIssue(
           item,
@@ -293,11 +295,10 @@ export class LintAction extends CommandLineAction {
     issueGroups: Map<string, IssueMessage[]>,
     ungroupedIssues: IssueMessage[]
   ): void {
-    const hasReturnTag = item.docBlock?.tags?.some(tag =>
-      tag.name === '@returns' || tag.name === '@return'
-    );
+    const hasReturnTag = !!(item.docBlock?.tags?.['returns'] || item.docBlock?.tags?.['return']);
 
-    if (!hasReturnTag && item.signature?.returnType?.name !== 'void') {
+    const signature = item.metadata?.signature as any;
+    if (!hasReturnTag && signature?.returnType?.name !== 'void') {
       this._addIssue(
         item,
         `Missing @returns documentation for ${item.kind} '${item.name}'`,
@@ -318,7 +319,7 @@ export class LintAction extends CommandLineAction {
     issueGroups: Map<string, IssueMessage[]>,
     ungroupedIssues: IssueMessage[]
   ): void {
-    const dedupeKey = `${text}:${item.source?.file}:${item.source?.line}`;
+    const dedupeKey = `${text}:${item.location?.path}:${item.location?.number}`;
 
     // Skip if already seen
     if (this._seenIssues.has(dedupeKey)) {
@@ -329,13 +330,13 @@ export class LintAction extends CommandLineAction {
     const issue: IssueMessage = {
       text,
       severity,
-      line: item.source?.line,
-      column: item.source?.column
+      line: item.location?.number,
+      column: item.location?.column
     };
 
     // Group by file or collect without location
-    if (item.source?.file) {
-      const fileKey = item.source.file;
+    if (item.location?.path) {
+      const fileKey = item.location.path;
       if (!issueGroups.has(fileKey)) {
         issueGroups.set(fileKey, []);
       }

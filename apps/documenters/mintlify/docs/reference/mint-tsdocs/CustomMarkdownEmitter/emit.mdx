@@ -1,0 +1,42 @@
+---
+title: "emit"
+icon: "function"
+description: "Emits markdown content from a DocNode tree. Entry point for the emission process. Delegates to parent class implementation which handles the recursive node traversal via writeNode()."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# emit
+
+## Summary
+
+Emits markdown content from a DocNode tree.  Entry point for the emission process. Delegates to parent class implementation which handles the recursive node traversal via `writeNode()`.  
+## Signature
+
+```typescript
+emit(stringBuilder: StringBuilder, docNode: DocNode, options: ICustomMarkdownEmitterOptions): string;
+```
+
+## Parameters
+
+### stringBuilder
+**Type**:`StringBuilder`
+
+StringBuilder to accumulate output
+
+### docNode
+**Type**:`DocNode`
+
+Root DocNode to emit
+
+### options
+**Type**:<RefLink target="mint-tsdocs.ICustomMarkdownEmitterOptions">`ICustomMarkdownEmitterOptions`</RefLink>
+
+Emission options including context API item and filename resolver
+
+## Returns
+
+**Type**:`string`
+
+Emits markdown content from a DocNode tree.Entry point for the emission process. Delegates to parent class implementation which handles the recursive node traversal via .

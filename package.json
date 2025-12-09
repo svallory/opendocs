@@ -7,7 +7,12 @@
   "license": "MIT",
   "workspaces": [
     "apps/*",
+    "apps/*/",
+    "apps/documenters/*",
+    "apps/extractor/*",
     "libs/*",
+    "libs/*/",
+    "libs/model/*",
     "packages/*"
   ],
   "scripts": {

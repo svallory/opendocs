@@ -1,6 +1,6 @@
 import React from 'react'
 
-export function PropertyList({ properties, className, color, onPropertyClick }) {
+export function PropertyList({ properties, className, onPropertyClick }) {
   const handlePropertyClick = (e, property) => {
     e.stopPropagation()
     if (onPropertyClick) {

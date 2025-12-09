@@ -4,7 +4,6 @@ import { ClassNode } from './ClassNode'
 import { FloatingEdge } from './FloatingEdge'
 import { UMLMarkers } from './UMLMarkers'
 import { generateNodes, generateEdges, EDGE_TYPES } from '../data/model-schema'
-import { getLayoutedElements } from '../utils/layout'
 import { getVisibleProperties } from '../data/features'
 
 // Register custom node types
@@ -74,17 +73,14 @@ export function ModelDiagram({
 }) {
   const [nodes, setNodes] = useState([])
   const [edges, setEdges] = useState([])
-  const [isLocalhost, setIsLocalhost] = useState(false)
-  const [rfInstance, setRfInstance] = useState(null)
-
-  // Detect if running on localhost
-  useEffect(() => {
-    const isLocal = typeof window !== 'undefined' &&
+  const [isLocalhost] = useState(() => {
+    // Initialize state with localhost check
+    return typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' ||
        window.location.hostname === '127.0.0.1' ||
        window.location.hostname === '')
-    setIsLocalhost(isLocal)
-  }, [])
+  })
+  const [rfInstance, setRfInstance] = useState(null)
 
   // Handle node position changes when dragging
   const onNodesChange = useCallback((changes) => {

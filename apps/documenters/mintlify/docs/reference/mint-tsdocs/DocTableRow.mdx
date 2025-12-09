@@ -1,0 +1,79 @@
+---
+title: "DocTableRow class"
+icon: "box"
+description: "Represents table row, similar to an HTML &lt;tr&gt; element."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# DocTableRow
+
+## Summary
+
+Represents table row, similar to an HTML `<tr>` element.  
+## Signature
+
+```typescript
+export declare class DocTableRow extends DocNode 
+```
+
+## Constructors
+
+### constructor
+
+Constructs a new instance of the class
+
+## Properties
+
+### cells
+**Modifiers**: readonly
+**Type**:<RefLink target="mint-tsdocs.DocTableCell">`get cells(): ReadonlyArray<DocTableCell>;`</RefLink>
+**Default**: ``
+
+
+
+### kind
+**Modifiers**: readonly
+**Type**:`get kind(): string;`
+**Default**: ``
+
+
+
+## Methods
+
+### addCell
+
+
+
+### addPlainTextCell
+
+
+
+### createAndAddCell
+
+
+
+### onGetChildNodes
+**Modifiers**: protected
+
+
+
+## Events
+
+*No events defined.*
+
+## Remarks
+
+  Table rows contain cells ([object Object]). Rows can be created with an initial set of cells or cells can be added dynamically using [object Object], [object Object], or the convenience method [object Object].  
+
+## Examples
+
+### Example 1
+
+```typescript
+
+```
+
+## Related Documentation
+- <PageLink target="/architecture/ast-nodes-layer">Custom AST nodes architecture</PageLink>

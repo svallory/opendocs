@@ -1,0 +1,67 @@
+---
+title: "DocNoteBox class"
+icon: "box"
+description: "Represents a note box, which is typically displayed as a bordered box containing informational text."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# DocNoteBox
+
+## Summary
+
+Represents a note box, which is typically displayed as a bordered box containing informational text.  
+## Signature
+
+```typescript
+export declare class DocNoteBox extends DocNode 
+```
+
+## Constructors
+
+### constructor
+
+Constructs a new instance of the class
+
+## Properties
+
+### content
+**Modifiers**: readonly
+**Type**:`readonly content: DocSection;`
+**Default**: ``
+
+
+
+### kind
+**Modifiers**: readonly
+**Type**:`get kind(): string;`
+**Default**: ``
+
+
+
+## Methods
+
+### onGetChildNodes
+**Modifiers**: protected
+
+
+
+## Events
+
+*No events defined.*
+
+## Remarks
+
+  Note boxes are rendered as Mintlify `<Note>` components, which provide visual emphasis for important information, warnings, tips, or other callout content. The content can include any section-level nodes like paragraphs, code blocks, and lists.  
+
+## Examples
+
+### Example 1
+
+```typescript
+
+```
+
+## Related Documentation
+- <PageLink target="/architecture/ast-nodes-layer">Custom AST nodes architecture</PageLink>

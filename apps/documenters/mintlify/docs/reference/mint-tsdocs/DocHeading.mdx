@@ -1,0 +1,71 @@
+---
+title: "DocHeading class"
+icon: "box"
+description: "Represents a section header similar to an HTML &lt;h1&gt; or &lt;h2&gt; element."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# DocHeading
+
+## Summary
+
+Represents a section header similar to an HTML `<h1>` or `<h2>` element.  
+## Signature
+
+```typescript
+export declare class DocHeading extends DocNode 
+```
+
+## Constructors
+
+### constructor
+
+Constructs a new DocHeading.
+
+## Properties
+
+### kind
+**Modifiers**: readonly
+**Type**:`get kind(): string;`
+**Default**: ``
+
+
+
+### level
+**Modifiers**: readonly
+**Type**:`readonly level: number;`
+**Default**: ``
+
+
+
+### title
+**Modifiers**: readonly
+**Type**:`readonly title: string;`
+**Default**: ``
+
+
+
+## Methods
+
+*No methods defined.*
+
+## Events
+
+*No events defined.*
+
+## Remarks
+
+  Headings support levels 1-5, corresponding to markdown heading levels (# through #####). Level 1 is the largest heading, level 5 is the smallest. If no level is specified, defaults to level 1.  
+
+## Examples
+
+### Example 1
+
+```typescript
+
+```
+
+## Related Documentation
+- <PageLink target="/architecture/ast-nodes-layer">Custom AST nodes architecture</PageLink>

@@ -1,0 +1,211 @@
+---
+title: Cheat Sheet
+description: Quick reference for the most common mint-tsdocs commands
+---
+
+## Use Without Installing
+
+```bash
+npx mint-tsdocs               # Create or configure your Mintlify docs and generate
+```
+
+## Installation
+
+```bash
+bun add -D mint-tsdocs        # Add to project
+bun add -g mint-tsdocs        # Install globally
+```
+
+## Essential Commands
+
+```bash
+# Create or Configure your docs project
+mint-tsdocs init              # Interactive setup
+mint-tsdocs init --yes        # Auto-detect everything
+
+# Generate documentation
+mint-tsdocs                   # Generate for current project
+mint-tsdocs ./packages/core   # Generate for specific directory
+
+# View information
+mint-tsdocs config            # Show current settings
+mint-tsdocs coverage          # Show documentation coverage
+
+# Check documentation quality
+mint-tsdocs lint              # Check for doc issues
+
+# Get help
+mint-tsdocs help              # Full help
+mint-tsdocs generate --help   # Command-specific help
+```
+
+## Global Flags
+
+```bash
+--verbose, -v                 # Show detailed output
+--debug                       # Show debug information
+--quiet, -q                   # Suppress output (errors only)
+```
+
+## Command-Specific Flags
+
+```bash
+# init command
+--yes, -y                     # Skip prompts (auto-detect)
+--project-dir, -p DIR         # Project directory
+--skip-mintlify               # Skip Mintlify initialization
+
+# generate command
+--project-dir DIR             # Project directory
+--skip-extractor              # Skip api-extractor (use cached .api.json)
+
+# customize command
+--template-dir, -t DIR        # Template directory
+--force, -f                   # Overwrite existing templates
+```
+
+## Quick Start Workflow
+
+```bash
+# 1. Initialize
+mint-tsdocs init --yes
+
+# 2. Build your TypeScript
+bun run build
+
+# 3. Generate docs
+mint-tsdocs
+
+# 4. Preview
+npx mintlify dev
+```
+
+## Monorepo Usage
+
+```bash
+# Initialize each package
+mint-tsdocs init -p ./packages/core --yes
+mint-tsdocs init -p ./packages/utils --yes
+
+# Generate docs for specific packages
+mint-tsdocs ./packages/core
+mint-tsdocs ./packages/utils
+
+# Or use --project-dir flag
+mint-tsdocs generate --project-dir ./packages/core
+
+# Batch generate
+for pkg in packages/*; do mint-tsdocs "$pkg"; done
+```
+
+## package.json Scripts
+
+```json
+{
+  "scripts": {
+    "docs": "mint-tsdocs",
+    "docs:init": "mint-tsdocs init",
+    "docs:dev": "mintlify dev"
+  }
+}
+```
+
+```bash
+bun run docs:init             # Initialize once
+bun run docs                  # Generate docs
+bun run docs:dev              # Preview locally
+```
+
+## Minimal Configuration
+
+**File:** `mint-tsdocs.config.json`
+
+```json
+{
+  "entryPoint": "./lib/index.d.ts",
+  "outputFolder": "./docs/reference"
+}
+```
+
+## Common Configuration
+
+```json
+{
+  "entryPoint": "./lib/index.d.ts",
+  "outputFolder": "./docs/reference",
+  "docsJson": "./docs/docs.json",
+  "tabName": "API Reference",
+  "groupName": "API"
+}
+```
+
+## Template Customization
+
+```bash
+# 1. Extract templates
+mint-tsdocs customize -t ./templates
+
+# 2. Edit templates
+vim ./templates/class.liquid
+
+# 3. Update config
+# Add: "templates": { "userTemplateDir": "./templates" }
+
+# 4. Regenerate
+mint-tsdocs
+```
+
+## Debugging
+
+```bash
+# Show configuration
+mint-tsdocs config
+
+# Show documentation coverage
+mint-tsdocs coverage
+
+# Check documentation quality
+mint-tsdocs lint
+
+# Debug mode
+mint-tsdocs --debug
+
+# Skip extraction (use cached data)
+mint-tsdocs generate --skip-extractor
+
+# Clear cache and regenerate
+rm -rf docs/.tsdocs && mint-tsdocs
+```
+
+## File Locations
+
+```
+mint-tsdocs.config.json       # Main config (required)
+docs/docs.json                # Mintlify navigation
+docs/reference/               # Generated MDX files
+docs/.tsdocs/                 # Cache directory (gitignored)
+```
+
+## Common Issues
+
+| Problem | Solution |
+|---------|----------|
+| Config not found | Run `mint-tsdocs init` |
+| Missing .d.ts files | Run `bun run build` first |
+| Declaration errors | Set `"declaration": true` in tsconfig.json |
+| Cache issues | Delete `docs/.tsdocs/` directory |
+
+## Environment Variables
+
+```bash
+# Show all debug output
+DEBUG=mint-tsdocs:* mint-tsdocs
+
+# Show only warnings and errors (default)
+mint-tsdocs
+```
+
+## See Also
+
+- **[CLI Reference](/cli-reference)** - Complete command documentation
+- **[Config Reference](/config-reference)** - All configuration options

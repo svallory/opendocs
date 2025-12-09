@@ -190,7 +190,7 @@ export class CoverageAction extends BaseAction {
                 return;
             }
 
-            const releaseTag = item.metadata?.releaseTag;
+            const releaseTag = item.metadata?.releaseTag as string | undefined;
 
             // Determine coverage level based on rules
             const level = this._evaluateRuleForDocItem(item, releaseTag, rules, includeInternal);
@@ -207,10 +207,10 @@ export class CoverageAction extends BaseAction {
             }
 
             // Get source file from item
-            const sourceFile = item.source?.file || 'unknown';
+            const sourceFile = item.location?.path || 'unknown';
 
             // Check if documented
-            const isDocumented = !!(item.docBlock && item.docBlock.description);
+            const isDocumented = !!(item.docBlock && item.docBlock.content);
 
             items.push({
                 name: item.name,

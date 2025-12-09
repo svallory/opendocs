@@ -1,0 +1,82 @@
+---
+title: Introduction
+description: Generate beautiful code references for your Mintlify documentation
+icon: "book-open"
+---
+
+import { RightArrow } from "/snippets/RightArrow.jsx"
+
+## The Easiest Way to Document Your Code
+
+Just run the command below in your Typescript library and answer a few questions.
+
+```bash
+npx mint-tsdocs
+```
+
+`mint-tsdocs` will automatically detect your TypeScript project, ask a few configuration questions,
+and set everything up.
+
+If you haven't configured your Mintlify docs yet, we'll do that for you too!
+
+<Card
+  title="Wanna see how good it looks?"
+  icon="camera"
+  href="/reference"
+  arrow="true"
+  cta="Check it out!"
+>
+  The Reference section of this documentation was generated using `mint-tsdocs` 
+</Card>
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Zero Configuration" icon="wand-magic-sparkles">
+    Auto-detects your TypeScript setup and generates everything you need. Fully customizable when you want control.
+  </Card>
+
+  <Card title="Advanced Interactive Components" icon="puzzle-piece" href="/components/type-tree">
+    Beautiful [Type Tree](/components/type-tree) visualizations and interactive components that look native to Mintlify—not bolted on.
+  </Card>
+
+  <Card title="Auto-Generated Type Information" icon="brackets-curly" href="/components/type-info">
+    Stop manually documenting complex types. We extract and format [TypeInfo](/components/type-info) automatically—nested objects, unions, generics, all of it.
+  </Card>
+
+  <Card title="Hands-Free Navigation" icon="map">
+    Your `docs.json` updates automatically. No more manual maintenance of navigation structure.
+  </Card>
+
+  <Card title="Smart Cross-References" icon="link">
+    Related API items link automatically. Your users never hit a dead end.
+  </Card>
+
+  <Card title="Always in Sync" icon="rotate">
+    Generated from your source code, not hand-written. When your types change, your docs reflect it.
+  </Card>
+</CardGroup>
+
+## Built on Solid Foundations
+
+mint-tsdocs is powered by Microsoft's excellent [API Extractor](https://api-extractor.com/) and [TSDoc](https://tsdoc.org/) projects, which handle the complex work of extracting and parsing TypeScript APIs. We're grateful to the Rush Stack team for these foundational tools.
+
+## Next Steps
+
+<CardGroup cols={1}>
+  <Card horizontal title="Installation" icon="download" href="/installation">
+    <RightArrow>
+      Install and configure the tool
+    </RightArrow>
+  </Card>
+  <Card horizontal title="Quick Start" icon="rocket" href="/quickstart">
+    <RightArrow>
+      Get up and running in minutes
+    </RightArrow>
+  </Card>
+  <Card horizontal title="Architecture" icon="sitemap" href="/architecture/overview">
+    <RightArrow>
+      Understand how it works
+    </RightArrow>
+  </Card>
+</CardGroup>

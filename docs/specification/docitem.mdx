@@ -117,19 +117,28 @@ export const docItemType = {
 
 ## Fields
 
-### id (required)
+### id  <Badge color="surface-destructive">required</Badge>
 
-Language-native fully qualified name using each language's natural naming convention.
+<Badge color="gray"> string </Badge>
+<span class="px-2 py-0.5 rounded-md bg-red-100/50 dark:bg-red-400/10 text-red-600 dark:text-red-300 font-medium whitespace-nowrap"> required </span>
 
-**Type**: `string`
+<ResponseField
+        name="id"
+        type="string"
+        required
+      >
+  Language-native fully qualified name using each language's natural naming convention.
 
-| Language | Format | Example |
-|----------|--------|---------|
-| TypeScript/JavaScript | `package#export` or `package#Class#member` | `my-lib#Calculator#add` |
-| Rust | `crate::module::Type` | `serde::de::Deserialize` |
-| Go | `package.Type` or `package.Function` | `fmt.Printf` |
-| Python | `module.Class.method` | `mylib.Calculator.add` |
-| Java | `package.Class.method` | `com.example.Calculator.add` |
+  **Type**: `string`
+
+  | Language | Format | Example |
+  |----------|--------|---------|
+  | TypeScript/JavaScript | `package#export` or `package#Class#member` | `my-lib#Calculator#add` |
+  | Rust | `crate::module::Type` | `serde::de::Deserialize` |
+  | Go | `package.Type` or `package.Function` | `fmt.Printf` |
+  | Python | `module.Class.method` | `mylib.Calculator.add` |
+  | Java | `package.Class.method` | `com.example.Calculator.add` |
+</ResponseField>
 
 ### name (required)
 

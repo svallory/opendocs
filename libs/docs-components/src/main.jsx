@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ReactFlow } from '@xyflow/react'
@@ -56,7 +57,7 @@ function renderDemoFlow(container) {
   if (roots['demo'] && containers['demo'] !== container) {
     try {
       roots['demo'].unmount()
-    } catch (e) {
+    } catch {
       // Ignore unmount errors
     }
   }
@@ -83,7 +84,7 @@ function renderModelDiagram(container) {
   if (roots['model'] && containers['model'] !== container) {
     try {
       roots['model'].unmount()
-    } catch (e) {
+    } catch {
       // Ignore unmount errors
     }
   }
@@ -114,7 +115,7 @@ function renderFeatureExplorer(container) {
   if (roots['feature'] && containers['feature'] !== container) {
     try {
       roots['feature'].unmount()
-    } catch (e) {
+    } catch {
       // Ignore unmount errors
     }
   }
@@ -147,7 +148,7 @@ function renderFullModelExplorer(container) {
   if (roots['fullmodel'] && containers['fullmodel'] !== container) {
     try {
       roots['fullmodel'].unmount()
-    } catch (e) {
+    } catch {
       // Ignore unmount errors
     }
   }
@@ -211,7 +212,7 @@ if (document.readyState === 'loading') {
 }
 
 // Watch for DOM changes (e.g., theme switches that re-render the page)
-const observer = new MutationObserver((mutations) => {
+const observer = new MutationObserver(() => {
   // Check if our containers were re-added or emptied
   const modelContainer = document.getElementById('model-diagram-root')
   const demoContainer = document.getElementById('diagram-root')
@@ -238,11 +239,3 @@ observer.observe(document.body, {
   subtree: true
 })
 
-// Export for external use
-export { ModelDiagram }
-export { FeatureExplorer }
-export { FullModelExplorer }
-export { FeaturePanel } from './components/FeaturePanel'
-export { DocumentationPanel } from './components/DocumentationPanel'
-export { fireModelSelectEvent, onModelSelect } from './utils/events'
-export { FEATURES } from './data/features'
