@@ -1,0 +1,32 @@
+type: 'application'
+language: 'polyglot'
+
+project:
+  name: 'opendocs-extractor'
+  description: 'OpenDocs extractors for multiple languages'
+
+tasks:
+  # Build all language implementations
+  build:
+    deps:
+      - '~:build'
+
+  # Run tests for all languages
+  test:
+    deps:
+      - '~:test'
+
+  # Format code
+  format:
+    deps:
+      - '~:format'
+
+  # Lint code
+  lint:
+    deps:
+      - '~:lint'
+
+  # Clean all build artifacts
+  clean:
+    deps:
+      - '~:clean'

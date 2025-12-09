@@ -12,7 +12,9 @@ versionConstraint: '>=1.22.2'
 # and cannot reference projects located outside the workspace boundary.
 projects:
   - "apps/*"
+  - "apps/extractor/*"
   - "libs/*"
+  - "libs/model/*"
   - "packages/*"
 
 vcs:
@@ -20,10 +22,11 @@ vcs:
   defaultBranch: "main"
 
   # Makes sure all developers have hooks activated
-  syncHooks: true
-  hooks:
-    pre-commit:
-      - 'moon run :lint :format --affected --status=staged'
+  # DISABLED: Not compatible with git worktrees
+  # syncHooks: true
+  # hooks:
+  #   pre-commit:
+  #     - 'moon run :lint :format --affected --status=staged'
 
 runner:
   archivableTargets:

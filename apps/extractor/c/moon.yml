@@ -1,0 +1,36 @@
+type: 'application'
+
+fileGroups:
+  sources:
+    - 'src/**/*'
+    - 'include/**/*'
+  tests:
+    - 'tests/**/*'
+
+tasks:
+  build:
+    command: |
+      mkdir -p build
+      cd build
+      cmake .. -DCMAKE_BUILD_TYPE=Release
+      cmake --build . --config Release
+    outputs:
+      - 'build/bin/opendocs-extract-c'
+
+  test:
+    command: |
+      cd build
+      ctest --output-on-failure
+    deps:
+      - 'build'
+
+  dev:
+    command: 'build/bin/opendocs-extract-c'
+    local: true
+
+  clean:
+    command: 'rm -rf build'
+
+  format:
+    command: |
+      find src include -name '*.c' -o -name '*.h' | xargs clang-format -i
