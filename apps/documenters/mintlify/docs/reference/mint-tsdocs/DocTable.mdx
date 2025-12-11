@@ -1,0 +1,83 @@
+---
+title: "DocTable class"
+icon: "box"
+description: "Represents table, similar to an HTML &lt;table&gt; element."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# DocTable
+
+## Summary
+
+Represents table, similar to an HTML `<table>` element.  
+## Signature
+
+```typescript
+export declare class DocTable extends DocNode 
+```
+
+## Constructors
+
+### constructor
+
+Constructs a new instance of the class
+
+## Properties
+
+### header
+**Modifiers**: readonly
+**Type**:<RefLink target="mint-tsdocs.DocTableRow">`readonly header: DocTableRow;`</RefLink>
+**Default**: ``
+
+
+
+### kind
+**Modifiers**: readonly
+**Type**:`get kind(): string;`
+**Default**: ``
+
+
+
+### rows
+**Modifiers**: readonly
+**Type**:<RefLink target="mint-tsdocs.DocTableRow">`get rows(): ReadonlyArray<DocTableRow>;`</RefLink>
+**Default**: ``
+
+
+
+## Methods
+
+### addRow
+
+
+
+### createAndAddRow
+
+
+
+### onGetChildNodes
+**Modifiers**: protected
+
+
+
+## Events
+
+*No events defined.*
+
+## Remarks
+
+  Tables must have a header with at least one cell. Rows are optional during construction but tables are typically rendered with data rows. Use [object Object] or [object Object] to add rows after construction.  
+
+## Examples
+
+### Example 1
+
+```typescript
+
+```
+
+## Related Documentation
+- <PageLink target="/architecture/ast-nodes-layer">Custom AST nodes architecture</PageLink>
+- <PageLink target="/tsdoc-reference">TSDoc reference</PageLink>

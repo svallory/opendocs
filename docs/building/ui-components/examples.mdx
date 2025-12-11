@@ -1,0 +1,754 @@
+---
+title: Component Examples
+sidebarTitle: Examples
+description: Example implementations of documentation components
+---
+
+## Overview
+
+This page provides complete, working examples of UI components for rendering OpenDocs documentation. Each example includes both the component code and usage instructions.
+
+## React Components
+
+### Full API Reference Component
+
+A complete API documentation browser with search and navigation:
+
+```typescript
+import { useState, useMemo } from 'react';
+import { DocSet, DocItem } from '@opendocs/model';
+import './APIReference.css';
+
+interface APIReferenceProps {
+  docSet: DocSet;
+}
+
+export function APIReference({ docSet }: APIReferenceProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItem, setSelectedItem] = useState<DocItem | null>(null);
+
+  const project = docSet.projects[0];
+
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) return project.items || [];
+    return searchItems(project.items || [], searchQuery);
+  }, [project.items, searchQuery]);
+
+  return (
+    <div className="api-reference">
+      <aside className="api-sidebar">
+        <div className="search-box">
+          <input
+            type="search"
+            placeholder="Search API..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <nav className="api-nav">
+          {filteredItems.map((item) => (
+            <NavItem
+              key={item.id}
+              item={item}
+              selected={selectedItem?.id === item.id}
+              onSelect={setSelectedItem}
+            />
+          ))}
+        </nav>
+      </aside>
+
+      <main className="api-content">
+        {selectedItem ? (
+          <DocItemDetail item={selectedItem} />
+        ) : (
+          <div className="api-placeholder">
+            <h2>{project.name}</h2>
+            <p>Select an item from the sidebar to view its documentation.</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function NavItem({
+  item,
+  selected,
+  onSelect,
+}: {
+  item: DocItem;
+  selected: boolean;
+  onSelect: (item: DocItem) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasChildren = item.children && item.children.length > 0;
+
+  return (
+    <div className="nav-item">
+      <button
+        className={`nav-button ${selected ? 'selected' : ''}`}
+        onClick={() => onSelect(item)}
+      >
+        {hasChildren && (
+          <span
+            className="expand-icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
+          >
+            {expanded ? '▼' : '▶'}
+          </span>
+        )}
+        <span className="item-name">{item.name}</span>
+        <span className="item-kind">{item.kind}</span>
+      </button>
+
+      {hasChildren && expanded && (
+        <div className="nav-children">
+          {item.children.map((child) => (
+            <NavItem
+              key={child.id}
+              item={child}
+              selected={selected}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DocItemDetail({ item }: { item: DocItem }) {
+  return (
+    <article className="doc-item">
+      <header>
+        <h1>{item.name}</h1>
+        <span className="kind-badge">{item.kind}</span>
+        {item.location && (
+          <a href={`#${item.location.path}:${item.location.number}`} className="source-link">
+            View Source
+          </a>
+        )}
+      </header>
+
+      {item.metadata?.signature && (
+        <CodeSignature item={item} />
+      )}
+
+      {item.docBlock?.content && (
+        <section className="description">
+          <p>{item.docBlock.content}</p>
+        </section>
+      )}
+
+      {item.docBlock?.tags?.param && (
+        <ParameterSection params={item.docBlock.tags.param} signature={item.metadata?.signature} />
+      )}
+
+      {item.docBlock?.tags?.returns && (
+        <section className="returns">
+          <h3>Returns</h3>
+          <p>{item.docBlock.tags.returns[0]}</p>
+        </section>
+      )}
+
+      {item.children && item.children.length > 0 && (
+        <section className="members">
+          <h3>Members</h3>
+          {item.children.map((child) => (
+            <MemberCard key={child.id} item={child} />
+          ))}
+        </section>
+      )}
+    </article>
+  );
+}
+
+function searchItems(items: DocItem[], query: string): DocItem[] {
+  const lowerQuery = query.toLowerCase();
+  const results: DocItem[] = [];
+
+  for (const item of items) {
+    if (
+      item.name.toLowerCase().includes(lowerQuery) ||
+      item.docBlock?.content?.toLowerCase().includes(lowerQuery)
+    ) {
+      results.push(item);
+    }
+
+    if (item.children) {
+      results.push(...searchItems(item.children, lowerQuery));
+    }
+  }
+
+  return results;
+}
+```
+
+### Code Signature Component
+
+Display formatted code signatures with syntax highlighting:
+
+```typescript
+import Prism from 'prismjs';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-go';
+
+export function CodeSignature({ item }: { item: DocItem }) {
+  const signature = formatSignature(item);
+  const highlighted = Prism.highlight(
+    signature,
+    Prism.languages[item.language] || Prism.languages.text,
+    item.language
+  );
+
+  return (
+    <pre className="code-signature">
+      <code
+        className={`language-${item.language}`}
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
+    </pre>
+  );
+}
+
+function formatSignature(item: DocItem): string {
+  const sig = item.metadata?.signature;
+  if (!sig) return item.name;
+
+  switch (item.language) {
+    case 'typescript':
+      return formatTypeScriptSignature(item, sig);
+    case 'python':
+      return formatPythonSignature(item, sig);
+    case 'go':
+      return formatGoSignature(item, sig);
+    default:
+      return item.name;
+  }
+}
+
+function formatTypeScriptSignature(item: DocItem, sig: any): string {
+  const params = sig.parameters
+    ?.map((p: any) => `${p.name}: ${p.type?.name || 'any'}`)
+    .join(', ') || '';
+
+  const modifiers = [];
+  if (item.metadata?.isAsync) modifiers.push('async');
+  if (item.metadata?.isStatic) modifiers.push('static');
+
+  return `${modifiers.join(' ')} ${item.kind} ${item.name}(${params}): ${sig.returnType?.name || 'void'}`;
+}
+
+function formatPythonSignature(item: DocItem, sig: any): string {
+  const params = sig.parameters
+    ?.map((p: any) => `${p.name}${p.type?.name ? `: ${p.type.name}` : ''}`)
+    .join(', ') || '';
+
+  const returnType = sig.returnType?.name ? ` -> ${sig.returnType.name}` : '';
+
+  return `def ${item.name}(${params})${returnType}:`;
+}
+
+function formatGoSignature(item: DocItem, sig: any): string {
+  const receiver = item.metadata?.receiver ? `(${item.metadata.receiver}) ` : '';
+  const params = sig.parameters
+    ?.map((p: any) => `${p.name} ${p.type?.name || 'interface{}'}`)
+    .join(', ') || '';
+
+  return `func ${receiver}${item.name}(${params}) ${sig.returnType?.name || ''}`;
+}
+```
+
+### Parameter Table Component
+
+Organized table for function/method parameters:
+
+```typescript
+export function ParameterSection({
+  params,
+  signature,
+}: {
+  params: any[];
+  signature?: any;
+}) {
+  return (
+    <section className="parameters">
+      <h3>Parameters</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {params.map((param, i) => {
+            const paramName = param.parameters?.name || '';
+            const paramType = signature?.parameters
+              ?.find((p: any) => p.name === paramName)?.type?.name || 'any';
+
+            return (
+              <tr key={i}>
+                <td><code>{paramName}</code></td>
+                <td><code>{paramType}</code></td>
+                <td>{param.content}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+```
+
+### Member Card Component
+
+Compact card for displaying class/interface members:
+
+```typescript
+export function MemberCard({ item }: { item: DocItem }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="member-card">
+      <button
+        className="member-header"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <span className="member-name">{item.name}</span>
+        <span className="member-kind">{item.kind}</span>
+        <span className="expand-icon">{expanded ? '▼' : '▶'}</span>
+      </button>
+
+      {expanded && (
+        <div className="member-content">
+          {item.metadata?.signature && (
+            <CodeSignature item={item} />
+          )}
+          {item.docBlock?.content && (
+            <p>{item.docBlock.content}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Vue Components
+
+### API Reference (Vue 3 Composition API)
+
+```vue
+<template>
+  <div class="api-reference">
+    <aside class="api-sidebar">
+      <input
+        v-model="searchQuery"
+        type="search"
+        placeholder="Search API..."
+        class="search-box"
+      />
+      <nav class="api-nav">
+        <NavItem
+          v-for="item in filteredItems"
+          :key="item.id"
+          :item="item"
+          :selected="selectedItem?.id === item.id"
+          @select="selectedItem = $event"
+        />
+      </nav>
+    </aside>
+
+    <main class="api-content">
+      <DocItemDetail v-if="selectedItem" :item="selectedItem" />
+      <div v-else class="api-placeholder">
+        <h2>{{ project.name }}</h2>
+        <p>Select an item from the sidebar.</p>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import type { DocSet, DocItem } from '@opendocs/model';
+import NavItem from './NavItem.vue';
+import DocItemDetail from './DocItemDetail.vue';
+
+const props = defineProps<{
+  docSet: DocSet;
+}>();
+
+const searchQuery = ref('');
+const selectedItem = ref<DocItem | null>(null);
+
+const project = computed(() => props.docSet.projects[0]);
+
+const filteredItems = computed(() => {
+  if (!searchQuery.value) return project.value.items || [];
+  return searchItems(project.value.items || [], searchQuery.value);
+});
+
+function searchItems(items: DocItem[], query: string): DocItem[] {
+  const lowerQuery = query.toLowerCase();
+  const results: DocItem[] = [];
+
+  for (const item of items) {
+    if (
+      item.name.toLowerCase().includes(lowerQuery) ||
+      item.docBlock?.content?.toLowerCase().includes(lowerQuery)
+    ) {
+      results.push(item);
+    }
+
+    if (item.children) {
+      results.push(...searchItems(item.children, lowerQuery));
+    }
+  }
+
+  return results;
+}
+</script>
+
+<style scoped>
+.api-reference {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: 100vh;
+}
+
+.api-sidebar {
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+}
+
+.search-box {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.api-content {
+  padding: 2rem;
+  overflow-y: auto;
+}
+</style>
+```
+
+### Nav Item Component (Vue)
+
+```vue
+<template>
+  <div class="nav-item">
+    <button
+      :class="['nav-button', { selected }]"
+      @click="$emit('select', item)"
+    >
+      <span
+        v-if="hasChildren"
+        class="expand-icon"
+        @click.stop="expanded = !expanded"
+      >
+        {{ expanded ? '▼' : '▶' }}
+      </span>
+      <span class="item-name">{{ item.name }}</span>
+      <span class="item-kind">{{ item.kind }}</span>
+    </button>
+
+    <div v-if="hasChildren && expanded" class="nav-children">
+      <NavItem
+        v-for="child in item.children"
+        :key="child.id"
+        :item="child"
+        :selected="false"
+        @select="$emit('select', $event)"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import type { DocItem } from '@opendocs/model';
+
+const props = defineProps<{
+  item: DocItem;
+  selected: boolean;
+}>();
+
+defineEmits<{
+  select: [item: DocItem];
+}>();
+
+const expanded = ref(false);
+
+const hasChildren = computed(
+  () => props.item.children && props.item.children.length > 0
+);
+</script>
+```
+
+## Web Components
+
+### API Reference Web Component
+
+```typescript
+class APIReferenceElement extends HTMLElement {
+  private docSet: DocSet | null = null;
+  private selectedItem: DocItem | null = null;
+
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    const docSetUrl = this.getAttribute('doc-set-url');
+    if (docSetUrl) {
+      this.loadDocSet(docSetUrl);
+    }
+  }
+
+  async loadDocSet(url: string) {
+    const response = await fetch(url);
+    this.docSet = await response.json();
+    this.render();
+  }
+
+  render() {
+    if (!this.docSet || !this.shadowRoot) return;
+
+    const project = this.docSet.projects[0];
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: grid;
+          grid-template-columns: 300px 1fr;
+          height: 100vh;
+        }
+
+        .sidebar {
+          border-right: 1px solid #e5e7eb;
+          overflow-y: auto;
+          padding: 1rem;
+        }
+
+        .content {
+          padding: 2rem;
+          overflow-y: auto;
+        }
+
+        .nav-item {
+          padding: 0.5rem;
+          cursor: pointer;
+          border-radius: 4px;
+        }
+
+        .nav-item:hover {
+          background: #f3f4f6;
+        }
+
+        .kind-badge {
+          background: #dbeafe;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+        }
+      </style>
+
+      <div class="sidebar">
+        <h3>${project.name}</h3>
+        <nav>${this.renderNavigation(project.items || [])}</nav>
+      </div>
+
+      <div class="content">
+        ${this.selectedItem
+          ? this.renderDocItem(this.selectedItem)
+          : '<p>Select an item from the sidebar.</p>'
+        }
+      </div>
+    `;
+
+    this.attachEventListeners();
+  }
+
+  renderNavigation(items: DocItem[]): string {
+    return items
+      .map(
+        (item) => `
+        <div class="nav-item" data-item-id="${item.id}">
+          <strong>${item.name}</strong>
+          <span class="kind-badge">${item.kind}</span>
+        </div>
+      `
+      )
+      .join('');
+  }
+
+  renderDocItem(item: DocItem): string {
+    return `
+      <article>
+        <header>
+          <h1>${item.name}</h1>
+          <span class="kind-badge">${item.kind}</span>
+        </header>
+        ${item.docBlock?.content ? `<p>${item.docBlock.content}</p>` : ''}
+        ${item.children ? this.renderChildren(item.children) : ''}
+      </article>
+    `;
+  }
+
+  renderChildren(children: DocItem[]): string {
+    return `
+      <section>
+        <h3>Members</h3>
+        ${children.map((child) => `
+          <div>
+            <h4>${child.name}</h4>
+            <p>${child.docBlock?.content || ''}</p>
+          </div>
+        `).join('')}
+      </section>
+    `;
+  }
+
+  attachEventListeners() {
+    if (!this.shadowRoot) return;
+
+    this.shadowRoot.querySelectorAll('.nav-item').forEach((el) => {
+      el.addEventListener('click', () => {
+        const itemId = (el as HTMLElement).dataset.itemId;
+        if (itemId) {
+          this.selectItem(itemId);
+        }
+      });
+    });
+  }
+
+  selectItem(id: string) {
+    const findItem = (items: DocItem[]): DocItem | null => {
+      for (const item of items) {
+        if (item.id === id) return item;
+        if (item.children) {
+          const found = findItem(item.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    if (this.docSet) {
+      this.selectedItem = findItem(this.docSet.projects[0].items || []);
+      this.render();
+    }
+  }
+}
+
+customElements.define('api-reference', APIReferenceElement);
+```
+
+### Usage
+
+```html
+<api-reference doc-set-url="/api/opendocs.json"></api-reference>
+```
+
+## Styling Examples
+
+### CSS Module Example
+
+```css
+/* APIReference.module.css */
+.container {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: 100vh;
+}
+
+.sidebar {
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.searchBox {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.navItem {
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.navItem:hover {
+  background-color: var(--hover-bg);
+}
+
+.navItem.selected {
+  background-color: var(--selected-bg);
+  font-weight: 600;
+}
+
+.content {
+  padding: 2rem;
+  overflow-y: auto;
+}
+```
+
+### Tailwind Example
+
+```typescript
+export function APIReference({ docSet }: { docSet: DocSet }) {
+  return (
+    <div className="grid grid-cols-[300px_1fr] h-screen">
+      <aside className="border-r border-gray-200 overflow-y-auto p-4">
+        <input
+          type="search"
+          className="w-full p-2 mb-4 border border-gray-300 rounded-md"
+          placeholder="Search..."
+        />
+        <nav className="space-y-1">
+          {docSet.projects[0].items?.map((item) => (
+            <button
+              key={item.id}
+              className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <span className="font-medium">{item.name}</span>
+              <span className="ml-2 text-xs text-gray-500">{item.kind}</span>
+            </button>
+          ))}
+        </nav>
+      </aside>
+      <main className="p-8 overflow-y-auto">
+        {/* Content */}
+      </main>
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Component Patterns" icon="shapes" href="/building/ui-components/overview">
+    Learn component architecture patterns
+  </Card>
+  <Card title="Rendering Guide" icon="paint-brush" href="/building/documenters/rendering">
+    Explore rendering strategies
+  </Card>
+</CardGroup>

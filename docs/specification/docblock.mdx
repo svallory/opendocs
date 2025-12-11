@@ -1,0 +1,376 @@
+---
+title: DocBlock Specification
+sidebarTitle: DocBlock
+description: Structured documentation content and tags
+---
+
+## Overview
+
+**DocBlock** represents structured documentation content extracted from source code comments. It provides a unified format for documentation regardless of the original comment syntax (TSDoc, Javadoc, rustdoc, Python docstrings, etc.).
+
+## Key Insight: Cross-Format Normalization
+
+Different languages use different documentation syntaxes, but they all normalize to the same DocBlock structure:
+
+- **TSDoc** (`/** ... */`) → DocBlock
+- **Javadoc** (`/** ... */`) → DocBlock
+- **Rustdoc** (`/// ...`) → DocBlock
+- **Python docstrings** (`"""..."""`) → DocBlock
+- **Go doc comments** (`// ...`) → DocBlock
+
+This enables consistent rendering and cross-language documentation tools.
+
+## Schema
+
+import { TypeTree } from "/snippets/tsdocs/TypeTree.jsx"
+
+export const docBlockType = {
+  name: "DocBlock",
+  type: "object",
+  description: "Documentation content structure",
+  properties: [
+    {
+      name: "content",
+      type: "string",
+      description: "Main documentation text"
+    },
+    {
+      name: "tags",
+      type: "Record<string, (string | DocTag)[]>",
+      description: "Documentation tags (@param, @returns, @deprecated, etc.)"
+    }
+  ]
+};
+
+<TypeTree open {...docBlockType} />
+
+## Fields
+
+### content (optional)
+
+Main documentation text. Supports Markdown formatting.
+
+**Type**: `string`
+
+**Example**:
+```json
+{
+  "content": "Calculates the area of a rectangle.\n\nThis function multiplies width by height to compute area."
+}
+```
+
+### tags (optional)
+
+Map of tag names to arrays of tag values.
+
+**Type**: `Record<string, (string | DocTag)[]>`
+
+**Format**:
+- **Key**: Tag name without `@` (e.g., `"param"`, `"returns"`, `"since"`, `"deprecated"`)
+- **Value**: Array of strings (simple tags) or DocTag objects (complex tags)
+- Each tag type can have multiple entries (e.g., multiple `@param` tags)
+
+## Tag Formats
+
+DocBlock supports three tag formats:
+
+### 1. Simple String Tags
+
+For tags that are just text values:
+
+```json
+{
+  "tags": {
+    "since": ["1.0.0"],
+    "author": ["John Doe", "Jane Smith"],
+    "internal": ["true"]
+  }
+}
+```
+
+### 2. DocTag Objects
+
+For tags with structured parameters (like `@param`, `@returns`):
+
+```json
+{
+  "tags": {
+    "param": [
+      {
+        "name": "param",
+        "content": "The width of the rectangle",
+        "parameters": { "name": "width", "type": "number" }
+      },
+      {
+        "name": "param",
+        "content": "The height of the rectangle",
+        "parameters": { "name": "height", "type": "number" }
+      }
+    ],
+    "returns": ["The calculated area"]
+  }
+}
+```
+
+### 3. Mixed Tags
+
+Combining both formats:
+
+```json
+{
+  "tags": {
+    "param": [
+      { "name": "param", "content": "First parameter", "parameters": { "name": "a" } }
+    ],
+    "returns": ["Return value"],
+    "since": ["2.0.0"],
+    "author": ["Developer Name"]
+  }
+}
+```
+
+## Common Tags
+
+| Tag | Format | Description |
+|-----|--------|-------------|
+| `param` | DocTag | Function/method parameter |
+| `returns` | string | Return value description |
+| `throws` / `exception` | string or DocTag | Exception thrown |
+| `since` | string | Version when introduced |
+| `deprecated` | string or DocTag | Deprecation information |
+| `author` | string | Author name |
+| `see` | string | Cross-reference |
+| `example` | string | Code example |
+| `internal` | string | Internal API marker |
+
+## Cross-Format Normalization Examples
+
+### TSDoc → DocBlock
+
+**Source:**
+```typescript
+/**
+ * Calculates area.
+ * @param width - The width
+ * @param height - The height
+ * @returns The area
+ */
+```
+
+**Normalized:**
+```json
+{
+  "content": "Calculates area.",
+  "tags": {
+    "param": [
+      { "name": "param", "content": "The width", "parameters": { "name": "width" } },
+      { "name": "param", "content": "The height", "parameters": { "name": "height" } }
+    ],
+    "returns": ["The area"]
+  }
+}
+```
+
+### Python Docstring → DocBlock
+
+**Source (Google style):**
+```python
+"""
+Calculates area.
+
+Args:
+    width (float): The width
+    height (float): The height
+
+Returns:
+    float: The area
+"""
+```
+
+**Normalized:**
+```json
+{
+  "content": "Calculates area.",
+  "tags": {
+    "param": [
+      { "name": "param", "content": "The width", "parameters": { "name": "width", "type": "float" } },
+      { "name": "param", "content": "The height", "parameters": { "name": "height", "type": "float" } }
+    ],
+    "returns": ["The area"]
+  }
+}
+```
+
+### Rustdoc → DocBlock
+
+**Source:**
+```rust
+/// Calculates area.
+///
+/// # Arguments
+/// * `width` - The width
+/// * `height` - The height
+///
+/// # Returns
+/// The area
+```
+
+**Normalized:**
+```json
+{
+  "content": "Calculates area.",
+  "tags": {
+    "param": [
+      { "name": "param", "content": "The width", "parameters": { "name": "width" } },
+      { "name": "param", "content": "The height", "parameters": { "name": "height" } }
+    ],
+    "returns": ["The area"]
+  }
+}
+```
+
+## Complete Example
+
+```json
+{
+  "content": "Calculates the area of a rectangle.\n\nThis function multiplies width by height to compute area.",
+  "tags": {
+    "param": [
+      {
+        "name": "param",
+        "content": "The width in meters",
+        "parameters": { "name": "width", "type": "number" }
+      },
+      {
+        "name": "param",
+        "content": "The height in meters",
+        "parameters": { "name": "height", "type": "number" }
+      }
+    ],
+    "returns": ["The area in square meters"],
+    "since": ["1.0.0"],
+    "example": ["calculateArea(5, 10) // => 50"],
+    "deprecated": [
+      {
+        "name": "deprecated",
+        "content": "Use calculateRectangleArea() instead",
+        "parameters": { "since": "2.0.0" }
+      }
+    ]
+  }
+}
+```
+
+## DocTag Structure
+
+For complex tags, the DocTag object has:
+
+**Fields**:
+- **name** (required): Tag name without `@`
+- **content** (required): Tag description
+- **parameters** (optional): Structured parameters
+
+**Example:**
+```json
+{
+  "name": "param",
+  "content": "The width in meters",
+  "parameters": {
+    "name": "width",
+    "type": "number"
+  }
+}
+```
+
+## Best Practices for Extractor Developers
+
+### Normalize All Formats
+
+Convert language-specific documentation to DocBlock:
+
+✅ TSDoc `@param` → `tags.param`
+✅ Python `Args:` → `tags.param`
+✅ Rustdoc `# Arguments` → `tags.param`
+
+### Preserve Type Information
+
+Include type information when available:
+
+```json
+{
+  "param": [
+    {
+      "name": "param",
+      "content": "User ID",
+      "parameters": { "name": "userId", "type": "string" }
+    }
+  ]
+}
+```
+
+### Support Markdown
+
+Allow Markdown in `content` and tag descriptions:
+
+```json
+{
+  "content": "Calculates **area**.\n\nSee [Rectangle](./shapes.md) for details."
+}
+```
+
+### Handle Multiple Tags
+
+Always use arrays, even for single values:
+
+```json
+{
+  "returns": ["The result"],  // Array with one item
+  "since": ["1.0.0"]          // Array with one item
+}
+```
+
+## Best Practices for Documenter Developers
+
+### Render Markdown
+
+Process `content` as Markdown:
+
+```typescript
+import { marked } from 'marked';
+
+const html = marked(docBlock.content);
+```
+
+### Handle Tag Arrays
+
+Always iterate, even if single item:
+
+```typescript
+docBlock.tags.param?.forEach(param => {
+  // Render parameter
+});
+```
+
+### Support Both Tag Formats
+
+Check if tag is string or DocTag:
+
+```typescript
+const tag = docBlock.tags.returns[0];
+if (typeof tag === 'string') {
+  // Simple string tag
+} else {
+  // DocTag object with parameters
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="DocItem" icon="cube" href="/specification/docitem">
+    See how DocBlocks attach to DocItems
+  </Card>
+  <Card title="Relations" icon="diagram-project" href="/specification/relations">
+    Learn about item relationships
+  </Card>
+</CardGroup>

@@ -1,0 +1,332 @@
+---
+title: OpenDocs
+description: A specification format like OpenAPI for your libraries and CLIs
+mode: custom
+---
+
+<div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+  {/* Hero Section */}
+  <div className="container mx-auto px-4 py-16 lg:py-24">
+    <div className="grid lg:grid-cols-2 gap-12 items-center">
+      {/* Left Column - Text */}
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-5xl lg:text-7xl font-black text-gray-900 leading-tight">
+            OpenDocs
+          </h1>
+          <p className="text-2xl lg:text-3xl text-gray-700 font-medium leading-relaxed">
+            Every software deserves good documentation, not just APIs.
+          </p>
+        </div>
+
+        <p className="text-lg text-gray-600 leading-relaxed">
+          Like OpenAPI, but for libraries, CLIs, and any codebase. A universal documentation
+          model that works across any programming language. Extract once, integrate everywhere.
+        </p>
+
+        <div className="flex flex-wrap gap-4">
+          <a
+            href="/introduction/overview"
+            className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
+          >
+            Get Started
+          </a>
+          <a
+            href="#sponsors"
+            className="px-8 py-4 bg-white hover:bg-gray-50 text-purple-600 font-semibold rounded-xl border-2 border-purple-600 transition-colors shadow-lg hover:shadow-xl"
+          >
+            Become a Sponsor
+          </a>
+        </div>
+      </div>
+
+      {/* Right Column - Visual */}
+      <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 p-8 rounded-2xl">
+        <div className="space-y-6">
+          {/* Project */}
+          <div className="bg-white border-4 border-purple-600 rounded-2xl p-6 shadow-xl">
+            <p className="text-2xl font-bold text-gray-800">Project</p>
+            <p className="text-sm text-gray-500 mt-2">Language, version, repository</p>
+          </div>
+
+          {/* Arrow */}
+          <div className="flex justify-center">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+
+          {/* DocItem */}
+          <div className="bg-white border-4 border-pink-500 rounded-2xl p-6 shadow-xl">
+            <p className="text-2xl font-bold text-gray-800">DocItem</p>
+            <p className="text-sm text-gray-500 mt-2">Classes, functions, everything</p>
+          </div>
+
+          {/* Arrow */}
+          <div className="flex justify-center">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+
+          {/* DocBlock and Tag */}
+          <div className="flex gap-4">
+            <div className="flex-1 bg-white border-4 border-orange-500 rounded-2xl p-6 shadow-xl">
+              <p className="text-xl font-bold text-gray-800">DocBlock</p>
+              <p className="text-xs text-gray-500 mt-2">Documentation</p>
+            </div>
+            <div className="w-24 bg-white border-4 border-green-500 rounded-2xl p-4 shadow-xl flex items-center justify-center">
+              <p className="text-lg font-bold text-gray-800">Tag</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Benefits Section */}
+  <div className="bg-white py-20">
+    <div className="container mx-auto px-4">
+      <h2 className="text-4xl lg:text-5xl font-bold text-center text-gray-900 mb-4">
+        Why OpenDocs?
+      </h2>
+      <p className="text-xl text-center text-gray-600 mb-16 max-w-3xl mx-auto">
+        The missing standard for code documentation
+      </p>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        {/* Benefit 1 */}
+        <div className="group p-8 rounded-2xl border-2 border-purple-200 hover:border-purple-600 transition-all hover:shadow-xl bg-gradient-to-br from-purple-50 to-white">
+          <div className="w-14 h-14 bg-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Universal Format</h3>
+          <p className="text-gray-600 leading-relaxed">
+            One model works for TypeScript, Rust, Go, Python, and any language. Extract once, use everywhere.
+          </p>
+        </div>
+
+        {/* Benefit 2 */}
+        <div className="group p-8 rounded-2xl border-2 border-pink-200 hover:border-pink-500 transition-all hover:shadow-xl bg-gradient-to-br from-pink-50 to-white">
+          <div className="w-14 h-14 bg-pink-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">AI-Native</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Built for AI tools like MCP servers, Claude Code, Cursor, and Windsurf. Perfect for code assistants.
+          </p>
+        </div>
+
+        {/* Benefit 3 */}
+        <div className="group p-8 rounded-2xl border-2 border-orange-200 hover:border-orange-500 transition-all hover:shadow-xl bg-gradient-to-br from-orange-50 to-white">
+          <div className="w-14 h-14 bg-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Source Linking</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Every item includes file path, line number, and column. Generate "Go to Definition" links automatically.
+          </p>
+        </div>
+
+        {/* Benefit 4 */}
+        <div className="group p-8 rounded-2xl border-2 border-green-200 hover:border-green-500 transition-all hover:shadow-xl bg-gradient-to-br from-green-50 to-white">
+          <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Platform Integration</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Integrate with documentation platforms like Mintlify, ReadTheDocs, Docusaurus, or build your own tools.
+          </p>
+        </div>
+
+        {/* Benefit 5 */}
+        <div className="group p-8 rounded-2xl border-2 border-blue-200 hover:border-blue-500 transition-all hover:shadow-xl bg-gradient-to-br from-blue-50 to-white">
+          <div className="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Language-Native IDs</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Uses natural naming: <code className="text-sm bg-blue-100 px-2 py-1 rounded">pkg#Symbol</code>, <code className="text-sm bg-blue-100 px-2 py-1 rounded">crate::Type</code>, <code className="text-sm bg-blue-100 px-2 py-1 rounded">package.Function</code>
+          </p>
+        </div>
+
+        {/* Benefit 6 */}
+        <div className="group p-8 rounded-2xl border-2 border-indigo-200 hover:border-indigo-600 transition-all hover:shadow-xl bg-gradient-to-br from-indigo-50 to-white">
+          <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Monorepo Ready</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Built-in support for monorepos. Each package is a Project with dependencies and cross-references.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Use Cases Section */}
+  <div className="bg-gradient-to-br from-slate-50 to-purple-50 py-20">
+    <div className="container mx-auto px-4">
+      <h2 className="text-4xl lg:text-5xl font-bold text-center text-gray-900 mb-4">
+        Use Cases
+      </h2>
+      <p className="text-xl text-center text-gray-600 mb-16 max-w-3xl mx-auto">
+        One format that solves problems single-language tools can't
+      </p>
+
+      <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        {/* Use Case 1: Unified Multi-Language Documentation */}
+        <div className="bg-white p-10 rounded-2xl shadow-lg border-2 border-gray-100 hover:border-purple-300 transition-all">
+          <div className="text-4xl mb-4">📚</div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Unified Multi-Language Documentation</h3>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            Your React app, Go backend, and Python ML pipeline need ONE docs site. TSDoc, GoDoc,
+            and Sphinx each output different formats—how do you merge them? OpenDocs gives you
+            a single format to feed into Mintlify, Docusaurus, or your custom platform.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">Multi-Language</span>
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">Single Site</span>
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">Any Platform</span>
+          </div>
+        </div>
+
+        {/* Use Case 2: Tool Developers & Integrators */}
+        <div className="bg-white p-10 rounded-2xl shadow-lg border-2 border-gray-100 hover:border-orange-300 transition-all">
+          <div className="text-4xl mb-4">🛠️</div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Tool Developers & Integrators</h3>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            Want to build a doc search tool? SDK generator? Validation system? With language-specific
+            tools, you'd need to parse JSDoc, PyDoc, GoDoc, and JavaDoc. With OpenDocs, parse one
+            format and your tool works for every language.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">Tooling</span>
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">Generators</span>
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">Automation</span>
+          </div>
+        </div>
+
+        {/* Use Case 3: AI Context Engineering */}
+        <div className="bg-white p-10 rounded-2xl shadow-lg border-2 border-gray-100 hover:border-green-300 transition-all">
+          <div className="text-4xl mb-4">🤖</div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">AI Context Engineering</h3>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            AI code assistants need structured context about your codebase. Parsing multiple AST
+            formats (TypeScript Compiler API, Python ast, go/parser) is complex and inconsistent.
+            OpenDocs provides pre-structured documentation—AI engineers don't need to parse ASTs.
+            We support Token-Oriented Object Notation (TOON) format which reduces tokens by 50%
+            and improves retrieval accuracy.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">MCP Servers</span>
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">AI Context</span>
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">TOON Format</span>
+          </div>
+        </div>
+
+        {/* Use Case 4: Documentation Platform Freedom */}
+        <div className="bg-white p-10 rounded-2xl shadow-lg border-2 border-gray-100 hover:border-blue-300 transition-all">
+          <div className="text-4xl mb-4">🔄</div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Documentation Platform Freedom</h3>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            Locked into Sphinx? Want to try Mintlify? Switching documentation platforms means
+            rewriting extraction pipelines for each language. Extract to OpenDocs once, then
+            integrate with any platform—Mintlify, ReadTheDocs, Docusaurus, or build your own renderer.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Platform Agnostic</span>
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Mintlify</span>
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Docusaurus</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Sponsors Section */}
+  <div id="sponsors" className="bg-white py-20">
+    <div className="container mx-auto px-4">
+      <div className="max-w-4xl mx-auto text-center">
+        <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+          Our Sponsors
+        </h2>
+        <p className="text-xl text-gray-600 mb-12 leading-relaxed">
+          OpenDocs is an open specification that benefits the entire development ecosystem.
+          We're grateful to the individuals and organizations who support this project and help
+          us maintain extractors, improve documentation, and build integrations.
+        </p>
+
+        {/* Sponsor logos/names would go here */}
+        <div className="mb-12 p-12 bg-gradient-to-br from-slate-50 to-purple-50 rounded-2xl border-2 border-gray-200">
+          <p className="text-lg text-gray-600 italic">
+            Be the first to support OpenDocs and get your name or logo featured here!
+          </p>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-6">
+          <a
+            href="https://github.com/svallory/sponsors"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-10 py-5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl font-bold rounded-xl transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+          >
+            Become a Sponsor
+          </a>
+          <a
+            href="mailto:me@saulo.engineer"
+            className="inline-block px-10 py-5 bg-white hover:bg-gray-50 text-purple-600 text-xl font-bold rounded-xl border-2 border-purple-600 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+          >
+            Get In Touch
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* CTA Section */}
+  <div className="bg-gradient-to-br from-purple-600 to-pink-600 py-20">
+    <div className="container mx-auto px-4 text-center">
+      <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+        Ready to Get Started?
+      </h2>
+      <p className="text-xl text-purple-100 mb-10 max-w-2xl mx-auto">
+        Explore the OpenDocs ecosystem, learn the specification, or start building your own tools.
+      </p>
+      <div className="flex flex-wrap justify-center gap-4">
+        <a
+          href="/introduction/overview"
+          className="px-10 py-5 bg-white hover:bg-gray-50 text-purple-600 text-lg font-bold rounded-xl transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+        >
+          What is OpenDocs?
+        </a>
+        <a
+          href="/specification/overview"
+          className="px-10 py-5 bg-purple-800 hover:bg-purple-900 text-white text-lg font-bold rounded-xl transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+        >
+          The Specification
+        </a>
+        <a
+          href="https://github.com/svallory/opendocs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-10 py-5 bg-gray-900 hover:bg-black text-white text-lg font-bold rounded-xl transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+        >
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

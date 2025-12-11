@@ -1,0 +1,7 @@
+{
+  "name": "test-library",
+  "version": "1.0.0",
+  "description": "Test library for OpenDocs TypeScript extractor",
+  "main": "index.ts",
+  "types": "index.ts"
+}

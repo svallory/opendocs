@@ -1,0 +1,62 @@
+---
+title: "getGlobalCacheManager function"
+icon: "function"
+description: "Get the global cache manager instance"
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# getGlobalCacheManager
+
+## Summary
+
+Get the global cache manager instance  
+
+
+## Signature
+
+```typescript
+export declare function getGlobalCacheManager(options?: CacheManagerOptions): CacheManager;
+```
+
+
+## Parameters
+
+
+
+### options
+
+
+**Type**: <RefLink target="mint-tsdocs.CacheManagerOptions">`CacheManagerOptions`</RefLink>
+
+
+
+**Optional**: Yes
+
+
+
+
+
+Cache configuration options (only used on first call)
+
+
+
+
+
+## Returns
+
+
+
+**Type**: <RefLink target="mint-tsdocs.CacheManager">`CacheManager`</RefLink>
+
+
+
+Get the global cache manager instance
+
+
+
+
+## Remarks
+
+  The global cache manager is a singleton. Options can only be provided on the first call. If you need to reconfigure, call [object Object] first, or create a new instance with `new CacheManager(options)` instead.

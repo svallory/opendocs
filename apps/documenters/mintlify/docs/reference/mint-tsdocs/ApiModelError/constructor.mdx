@@ -1,0 +1,38 @@
+---
+title: "constructor"
+icon: "function"
+description: "Creates an instance of ApiModelError."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# constructor
+
+## Summary
+
+Creates an instance of ApiModelError.  
+## Signature
+
+```typescript
+constructor(message: string, code?: ErrorCode, context?: ErrorContext);
+```
+
+## Parameters
+
+### message
+- **Type**:`string`
+
+The primary, human-readable error message.
+
+### code
+- **Type**:<RefLink target="mint-tsdocs.ErrorCode">`ErrorCode`</RefLink>
+- **Optional**: Yes
+
+The standardized error code.
+
+### context
+- **Type**:<RefLink target="mint-tsdocs.ErrorContext">`ErrorContext`</RefLink>
+- **Optional**: Yes
+
+Additional structured context about the error.

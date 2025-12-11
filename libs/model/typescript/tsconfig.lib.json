@@ -1,0 +1,17 @@
+{
+  "extends": "../../../tsconfig.options.json",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src",
+    "emitDeclarationOnly": false,
+    "declaration": true,
+    "declarationMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "src/**/*",
+    "src/**/*.json"
+  ],
+  "references": []
+}

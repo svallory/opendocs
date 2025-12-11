@@ -1,0 +1,396 @@
+---
+title: Template Migration Guide
+description: Migrating from EJS to Liquid templates
+icon: "arrows-turn-to-dots"
+---
+
+## Overview
+
+mint-tsdocs has migrated from EJS to Liquid templates. This guide helps you migrate existing custom EJS templates to the new Liquid format.
+
+## Why the Change?
+
+**Liquid Advantages**:
+- **Simpler Syntax**: More intuitive for non-programmers
+- **Better Sandboxing**: Safer template execution
+- **Ecosystem**: Better tooling and editor support
+- **Familiarity**: Used by Jekyll, Shopify, and other platforms
+
+**EJS Deprecated** (v1.0):
+- No longer supported for custom templates
+- Built-in templates have been converted
+- Legacy support removed for security reasons
+
+## Quick Migration Path
+
+### Step 1: Check if You Need Custom Templates
+
+**You DON'T need to migrate if**:
+- You're using default templates (no custom templates)
+- You haven't created custom template files
+- Your documentation generates correctly
+
+**You DO need to migrate if**:
+- You have custom `.ejs` template files
+- You're using the old `templates` configuration option
+- You see warnings about deprecated EJS templates
+
+### Step 2: Initialize Liquid Templates
+
+```bash
+# Create template directory and copy defaults
+mint-tsdocs customize -t ./templates
+
+# This creates:
+# - templates/class.liquid
+# - templates/interface.liquid
+# - templates/function.liquid
+# - templates/enum.liquid
+# - etc.
+```
+
+### Step 3: Update Configuration
+
+**Before (mint-tsdocs.config.json)**:
+```json
+{
+  "templates": "./my-templates",  // Old option
+  "entryPoint": "./lib/index.d.ts",
+  "outputFolder": "./docs/reference"
+}
+```
+
+**After (mint-tsdocs.config.json)**:
+```json
+{
+  "templates": {
+    "userTemplateDir": "./templates",  // New structure
+    "cache": true,
+    "strict": true
+  },
+  "entryPoint": "./lib/index.d.ts",
+  "outputFolder": "./docs/reference"
+}
+```
+
+### Step 4: Convert Template Files
+
+For each `.ejs` file, create a corresponding `.liquid` file and convert the syntax.
+
+## Syntax Conversion Guide
+
+### Variable Output
+
+**EJS**:
+```ejs
+<%= apiItem.displayName %>
+<%= page.title %>
+```
+
+**Liquid**:
+```liquid
+{{ apiItem.displayName }}
+{{ page.title }}
+```
+
+### Conditionals
+
+**EJS**:
+```ejs
+<% if (apiItem.isDeprecated) { %>
+  <div>Deprecated</div>
+<% } %>
+```
+
+**Liquid**:
+```liquid
+{% if apiItem.isDeprecated %}
+  <div>Deprecated</div>
+{% endif %}
+```
+
+### Loops
+
+**EJS**:
+```ejs
+<% for (const method of methods) { %>
+  <li><%= method.name %></li>
+<% } %>
+```
+
+**Liquid**:
+```liquid
+{% for method in methods %}
+  <li>{{ method.name }}</li>
+{% endfor %}
+```
+
+### Complex Conditions
+
+**EJS**:
+```ejs
+<% if (properties && properties.length > 0) { %>
+  <h2>Properties</h2>
+<% } %>
+```
+
+**Liquid**:
+```liquid
+{% if properties and properties.size > 0 %}
+  <h2>Properties</h2>
+{% endif %}
+```
+
+### Array Operations
+
+**EJS**:
+```ejs
+<%= items.join(', ') %>
+<%= items.length %>
+```
+
+**Liquid**:
+```liquid
+{{ items | join: ', ' }}
+{{ items.size }}
+```
+
+## Syntax Conversion Table
+
+| EJS | Liquid | Notes |
+|-----|--------|-------|
+| `\u003c%= variable %\u003e` | `\{\{ variable \}\}` | Output variable |
+| `\u003c% if (condition) { %\u003e` | `{% if condition %}` | Conditional |
+| `\u003c% } %\u003e` | `{% endif %}` | End conditional |
+| `\u003c% for (item of items) { %\u003e` | `{% for item in items %}` | Loop |
+| `\u003c% } %\u003e` | `{% endfor %}` | End loop |
+| `\u003c%= items.length %\u003e` | `\{\{ items.size \}\}` | Array size |
+| `\u003c%= items.join(', ') %\u003e` | `\{\{ items \| join: ', ' \}\}` | Array join |
+| `\u003c%= text.replace('x', 'y') %\u003e` | `\{\{ text \| replace: 'x', 'y' \}\}` | String replace |
+| `\u003c%= str.toLowerCase() %\u003e` | `\{\{ str \| downcase \}\}` | Lowercase |
+| `\u003c%= str.toUpperCase() %\u003e` | `\{\{ str \| upcase \}\}` | Uppercase |
+
+## Advanced Conversions
+
+### Complex Conditionals
+
+**EJS**:
+```ejs
+<% if (constructors && constructors.length > 0) { %>
+  <% for (const constructor of constructors) { %>
+    <% if (constructor.isDeprecated) { %>
+      <!-- skip -->
+    <% } else { %>
+      <%= constructor.signature %>
+    <% } %>
+  <% } %>
+<% } %>
+```
+
+**Liquid**:
+```liquid
+{% if constructors and constructors.size > 0 %}
+  {% for constructor in constructors %}
+    {% unless constructor.isDeprecated %}
+      {{ constructor.signature }}
+    {% endunless %}
+  {% endfor %}
+{% endif %}
+```
+
+### Template Layouts
+
+**EJS**:
+```ejs
+<!-- No built-in layout support -->
+```
+
+**Liquid**:
+```liquid
+{% layout "layout" %}
+
+{% block content %}
+  <!-- Your content here -->
+{% endblock %}
+```
+
+### Table Generation
+
+**EJS**:
+```ejs
+<table>
+  <% for (const row of properties) { %>
+    <tr>
+      <td><%= row.title %></td>
+      <td><%= row.type %></td>
+      <td><%= row.description %></td>
+    </tr>
+  <% } %>
+</table>
+```
+
+**Liquid**:
+```liquid
+<table>
+  {% for row in properties %}
+    <tr>
+      <td>{{ row.title }}</td>
+      <td>{{ row.type }}</td>
+      <td>{{ row.description }}</td>
+    </tr>
+  {% endfor %}
+</table>
+```
+
+### Accessing Array Indices
+
+**EJS**:
+```ejs
+<% items.forEach((item, index) => { %>
+  <%= index + 1 %>. <%= item.name %>
+<% }); %>
+```
+
+**Liquid**:
+```liquid
+{% for item in items %}
+  {{ forloop.index }}. {{ item.name }}
+{% endfor %}
+```
+
+### Including Metadata
+
+**EJS**:
+```ejs
+<% if (row.modifiers) { %>
+  Modifiers: <%= row.modifiers.join(', ') %>
+<% } %>
+```
+
+**Liquid**:
+```liquid
+{% if row.modifiers %}
+  Modifiers: {{ row.modifiers | join: ', ' }}
+{% endif %}
+```
+
+## Complete Example Migration
+
+### Before (class.ejs)
+
+```ejs
+<% layout('layout') -%>
+
+# <%= apiItem.displayName %>
+
+<%= apiItem.description %>
+
+<% if (constructors && constructors.length > 0) { %>
+## Constructors
+
+<% for (const row of constructors) { %>
+- <%= row.title %>
+<% } %>
+<% } %>
+
+<% if (properties && properties.length > 0) { %>
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+<% for (const row of properties) { %>
+| <%= row.title %> | <%= row.type %> | <%= row.description %> |
+<% } %>
+<% } %>
+```
+
+### After (class.liquid)
+
+```liquid
+{% layout "layout" %}
+
+# {{ apiItem.displayName }}
+
+{{ apiItem.description }}
+
+{% if constructors and constructors.size > 0 %}
+## Constructors
+
+{% for row in constructors %}
+- {{ row.title }}
+{% endfor %}
+{% endif %}
+
+{% if properties and properties.size > 0 %}
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+{% for row in properties %}
+| {{ row.title }} | {{ row.type }} | {{ row.description }} |
+{% endfor %}
+{% endif %}
+```
+
+## Migration Checklist
+
+- [ ] Update configuration to use `templates` option
+- [ ] Rename template files from `.ejs` to `.liquid`
+- [ ] Convert all `\u003c%=%\u003e` to `\{\{ \}\}`
+- [ ] Convert all `\u003c%%\u003e` to `{% %}`
+- [ ] Update loop syntax (`forEach` → `for`)
+- [ ] Update conditionals (`if () {}` → `if`)
+- [ ] Replace `.length` with `.size`
+- [ ] Replace `.join()` with `| join` filter
+- [ ] Update string methods (`.toLowerCase()` → `| downcase`)
+- [ ] Test each template individually
+- [ ] Run full documentation generation
+- [ ] Verify all pages render correctly
+
+## Troubleshooting
+
+### Template Not Found
+
+**Problem**: Template file not being loaded
+
+**Solution**:
+- Verify `userTemplateDir` path in config
+- Check file names match API item kinds (lowercase)
+- Ensure `.liquid` extension is used
+
+### Syntax Errors
+
+**Problem**: Liquid syntax errors during generation
+
+**Solution**:
+- Check for unmatched `{% ... %}` tags
+- Verify all conditionals have `{% endif %}`
+- Ensure all loops have `{% endfor %}`
+- Test templates in isolation
+
+### Variables Not Rendering
+
+**Problem**: Variables showing as empty
+
+**Solution**:
+- Check variable names match template data
+- Use `.size` instead of `.length` for arrays
+- Verify data structure in debug mode
+
+## Getting Help
+
+- Check the [Liquid documentation](https://shopify.github.io/liquid/)
+- Review the [template examples](/templates/examples)
+- Use the template debugging features
+- Report issues on GitHub
+
+## Rollback Plan
+
+If you need to rollback to EJS:
+
+1. Keep your EJS templates as backup
+2. Use the old configuration (without `templates` option)
+3. The system will fall back to the built-in EJS templates
+4. Gradually migrate back when ready
+
+Remember: Migration is optional! The system works perfectly with the default Liquid templates. Only migrate if you need custom templates.

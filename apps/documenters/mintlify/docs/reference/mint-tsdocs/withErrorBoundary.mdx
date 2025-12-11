@@ -1,0 +1,55 @@
+---
+title: "withErrorBoundary function"
+icon: "function"
+description: "Decorator for adding error boundary protection to methods."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# withErrorBoundary
+
+## Summary
+
+Decorator for adding error boundary protection to methods. 
+
+
+## Signature
+
+```typescript
+export declare function withErrorBoundary<T extends (...args: any[]) => any>(context?: ErrorContext): (target: any, propertyKey: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
+```
+
+
+## Parameters
+
+
+
+### context
+
+
+**Type**: <RefLink target="mint-tsdocs.ErrorContext">`ErrorContext`</RefLink>
+
+
+
+**Optional**: Yes
+
+
+
+
+
+
+
+
+
+
+
+## Returns
+
+
+
+**Type**: (target: any, propertyKey: string, descriptor: PropertyDescriptor) => PropertyDescriptor
+
+
+
+Decorator for adding error boundary protection to methods.

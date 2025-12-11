@@ -1,0 +1,30 @@
+type: 'library'
+
+fileGroups:
+  sources:
+    - 'src/**/*'
+    - 'include/**/*'
+
+tasks:
+  build:
+    command: |
+      mkdir -p build
+      cd build
+      cmake .. -DCMAKE_BUILD_TYPE=Release
+      cmake --build . --config Release
+    outputs:
+      - 'build'
+
+  test:
+    command: |
+      cd build
+      ctest --output-on-failure
+    deps:
+      - 'build'
+
+  clean:
+    command: 'rm -rf build'
+
+  format:
+    command: |
+      find src include -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i

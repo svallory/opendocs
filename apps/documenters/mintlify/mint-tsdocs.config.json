@@ -1,0 +1,20 @@
+{
+  "$schema": "./src/schemas/config.schema.json",
+  "entryPoint": "lib/index.d.ts",
+  "outputFolder": "docs/reference",
+  "docsJson": "docs/docs.json",
+  "tabName": "Reference",
+  "groupName": "mint-tsdocs",
+  "templates": {
+    "userTemplateDir": "./templates"
+  },
+  "apiExtractor": {
+    "messages": {
+      "extractorMessageReporting": {
+        "ae-missing-release-tag": {
+          "logLevel": "none"
+        }
+      }
+    }
+  }
+}

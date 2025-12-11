@@ -1,0 +1,64 @@
+---
+title: "DocTableCell class"
+icon: "box"
+description: "Represents table cell, similar to an HTML &lt;td&gt; element."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# DocTableCell
+
+## Summary
+
+Represents table cell, similar to an HTML `<td>` element.  
+## Signature
+
+```typescript
+export declare class DocTableCell extends DocNode 
+```
+
+## Constructors
+
+### constructor
+
+Constructs a new instance of the class
+
+## Properties
+
+### content
+**Modifiers**: readonly
+**Type**:`readonly content: DocSection;`
+**Default**: ``
+
+
+
+### kind
+**Modifiers**: readonly
+**Type**:`get kind(): string;`
+**Default**: ``
+
+
+
+## Methods
+
+*No methods defined.*
+
+## Events
+
+*No events defined.*
+
+## Remarks
+
+  Table cells contain a DocSection that can hold any section-level content including paragraphs, code blocks, and lists. In most cases, cells contain simple text content, but they can also contain complex formatted content.  
+
+## Examples
+
+### Example 1
+
+```typescript
+
+```
+
+## Related Documentation
+- <PageLink target="/architecture/ast-nodes-layer">Custom AST nodes architecture</PageLink>

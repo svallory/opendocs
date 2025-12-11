@@ -1,0 +1,197 @@
+---
+title: Specification Overview
+sidebarTitle: Overview
+description: Understanding the OpenDocs specification structure and core concepts
+---
+
+## The OpenDocs Format
+
+The OpenDocs specification defines a **JSON-based format** for representing software documentation in a universal, language-agnostic way. Every OpenDocs documentation set is stored in an `opendocs.json` file.
+
+## Core Concept: Everything is a DocItem
+
+The key insight of OpenDocs is simple: **everything is a DocItem**.
+
+A module? DocItem.
+A class? DocItem.
+A method? DocItem.
+A parameter? DocItem.
+
+This consistent abstraction means:
+- **Simple mental model** - One concept to understand
+- **Easy traversal** - Recursive tree structure
+- **Universal** - Works for any programming language
+
+### Example Hierarchy
+
+```json
+{
+  "id": "my-lib#myModule",
+  "name": "myModule",
+  "kind": "module",
+  "children": [
+    {
+      "id": "my-lib#Calculator",
+      "name": "Calculator",
+      "kind": "class",
+      "parentId": "my-lib#myModule",
+      "children": [
+        {
+          "id": "my-lib#Calculator#add",
+          "name": "add",
+          "kind": "method",
+          "parentId": "my-lib#Calculator"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Visual representation:
+
+```
+Module (DocItem)
+└── Class (DocItem)
+    ├── Method (DocItem)
+    ├── Property (DocItem)
+    └── Constructor (DocItem)
+```
+
+## The Six Models
+
+OpenDocs consists of six interconnected models:
+
+| Model | Purpose | Required |
+|-------|---------|----------|
+| **DocSet** | Root container for entire documentation set | Yes |
+| **Project** | Individual project within a documentation set | Yes |
+| **DocItem** | Universal documentation element | Yes |
+| **DocBlock** | Documentation content (description + tags) | No |
+| **Relation** | Typed relationship between DocItems | No |
+| **Location** | Source code location (file, line, column) | No |
+
+### Model Diagram
+
+import { ModelDiagram } from "/snippets/model-diagram.jsx"
+
+<ModelDiagram />
+
+### How They Connect
+
+1. **DocSet** (the `opendocs.json` file) contains metadata and an array of Projects
+2. **Projects** contain top-level DocItems (packages, modules, namespaces) and optional Repository info
+3. **DocItems** nest hierarchically through the `children` array
+4. Each **DocItem** may include `parentId` for upward navigation
+5. Each **DocItem** may include source **Location** (file path, line number, column)
+6. **DocItems** reference semantically related items via **Relations** (extends, implements, etc.)
+7. **Relations** contain **Relation** objects linking to other DocItems
+8. **DocItems** link to their documentation via **DocBlock**
+9. **DocBlocks** organize tags in arrays for structured metadata
+
+## Structural vs Semantic Relationships
+
+OpenDocs makes a critical distinction:
+
+### Structural Hierarchy
+
+- **`parentId`** - Points to parent DocItem (upward navigation)
+- **`children`** - Contains nested DocItems (downward navigation)
+- Represents **where code lives** in the source tree
+
+### Semantic Relationships
+
+- **`relations`** - Links to related DocItems (extends, implements, etc.)
+- Represents **what the code means** architecturally
+- Examples: inheritance, interface implementation, trait bounds
+
+This separation makes it easy to:
+- Render code hierarchy (table of contents)
+- Display inheritance diagrams
+- Navigate between related types
+
+## Language-Native IDs
+
+Each DocItem has an `id` using the language's natural naming convention:
+
+| Language | Format | Example |
+|----------|--------|---------|
+| TypeScript/JavaScript | `package#export` or `package#Class#member` | `my-lib#Calculator#add` |
+| Rust | `crate::module::Type` | `serde::de::Deserialize` |
+| Go | `package.Type` or `package.Function` | `fmt.Printf` |
+| Python | `module.Class.method` | `mylib.Calculator.add` |
+| Java | `package.Class.method` | `com.example.Calculator.add` |
+
+This makes IDs:
+- **Intuitive** - Familiar to developers of each language
+- **Linkable** - Can be used in IDE "Go to Definition"
+- **Unique** - Fully qualified prevents collisions
+
+## Versioning
+
+The OpenDocs specification follows **semantic versioning** (semver):
+
+- **Major version** (1.x.x) - Breaking changes to the format
+- **Minor version** (x.1.x) - New optional fields, backwards-compatible
+- **Patch version** (x.x.1) - Clarifications, bug fixes in spec
+
+Current version: **1.0.0**
+
+The `version` field in DocSet indicates which version of the spec the file conforms to:
+
+```json
+{
+  "id": "my-docs",
+  "name": "My Documentation",
+  "version": "1.0.0",
+  "projects": [...]
+}
+```
+
+## JSON Schema
+
+The complete OpenDocs format is defined by a JSON Schema:
+
+- Located at `/schemas/opendocs.schema.json`
+- Validates opendocs.json files
+- Used by extractors for validation
+- Used by editors for autocomplete
+
+See [JSON Schema Reference](/specification/json-schema) for the complete schema.
+
+## Design Principles
+
+The OpenDocs specification is guided by five core principles:
+
+1. **Language-agnostic** - Works for any programming language
+2. **Language-native** - Uses each language's natural conventions
+3. **Flexible relations** - Supports simple and complex relationships
+4. **Source locations** - Every item links back to source code
+5. **Cross-format normalization** - TSDoc, Javadoc, rustdoc → one format
+
+Read more in [Design Principles](/introduction/design-principles).
+
+## Next Steps
+
+Dive into each model:
+
+<CardGroup cols={2}>
+  <Card title="DocSet" icon="box" href="/specification/docset">
+    The root container for your documentation
+  </Card>
+  <Card title="Project" icon="folder-tree" href="/specification/project">
+    Individual projects within a documentation set
+  </Card>
+  <Card title="DocItem" icon="cube" href="/specification/docitem">
+    The universal documentation element
+  </Card>
+  <Card title="DocBlock" icon="file-lines" href="/specification/docblock">
+    Documentation content and tags
+  </Card>
+  <Card title="Relations" icon="diagram-project" href="/specification/relations">
+    Typed relationships between DocItems
+  </Card>
+  <Card title="File Organization" icon="folder-open" href="/specification/file-organization">
+    Multi-file documentation using $ref
+  </Card>
+</CardGroup>

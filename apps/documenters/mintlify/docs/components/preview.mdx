@@ -1,0 +1,252 @@
+---
+title: Preview
+description: Display content with a labeled border, similar to code blocks
+icon: scan-eye
+---
+
+import { Preview } from "/snippets/tsdocs/Preview.jsx"
+import { TypeTree } from "/snippets/tsdocs/TypeTree.jsx"
+
+The `Preview` component wraps content with a title and border, using the same visual style as code blocks. It's perfect for highlighting examples or demonstrations in your documentation.
+
+## Basic Usage
+
+Wrap any content with the Preview component:
+
+<Preview>
+  <div className="text-center p-4">
+    <p className="text-lg font-medium">This content is wrapped in a Preview component</p>
+  </div>
+</Preview>
+
+```jsx
+<Preview>
+  <div className="text-center p-4">
+    <p className="text-lg font-medium">This content is wrapped in a Preview component</p>
+  </div>
+</Preview>
+```
+
+## Properties
+
+<ResponseField name="children" type="ReactNode" required>
+  The content to display in the preview area. Can be any valid React node.
+</ResponseField>
+
+<ResponseField name="title" type="string" default="Preview">
+  Title displayed in the header. Defaults to "Preview" if not specified.
+</ResponseField>
+
+<ResponseField name="className" type="string">
+  Additional CSS classes to apply to the container element.
+</ResponseField>
+
+## With Custom Title
+
+Add a custom title to provide context:
+
+<Preview title="Component Example">
+  <TypeTree open
+    name="config"
+    type="object"
+    description="Application configuration"
+    required={true}
+    properties={[
+      { name: "apiKey", type: "string", required: true },
+      { name: "timeout", type: "number", defaultValue: "5000" }
+    ]}
+  />
+</Preview>
+
+```jsx
+<Preview title="Component Example">
+  <TypeTree open
+    name="config"
+    type="object"
+    description="Application configuration"
+    required={true}
+    properties={[
+      { name: "apiKey", type: "string", required: true },
+      { name: "timeout", type: "number", defaultValue: "5000" }
+    ]}
+  />
+</Preview>
+```
+
+## Features
+
+### Consistent Styling
+
+The component uses the same visual design as Mintlify code blocks:
+- Rounded corners and subtle border
+- Title header with proper spacing
+- Light/dark mode support
+- Scrollable content area
+
+### Dark Mode
+
+Automatically adapts to Mintlify's theme:
+- Light backgrounds in light mode
+- Dark backgrounds in dark mode
+- Proper contrast for all text and borders
+
+## Use Cases
+
+### Component Demonstrations
+
+Show interactive components:
+
+<Preview title="Alert Component">
+  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+    <p className="text-blue-800 dark:text-blue-200">
+      This is an informational alert
+    </p>
+  </div>
+</Preview>
+
+### Type Documentation
+
+Display type structures with TypeTree:
+
+<Preview title="API Response Structure">
+  <TypeTree open
+    name="response"
+    type="object"
+    description="Standard API response format"
+    properties={[
+      { name: "success", type: "boolean", required: true },
+      { name: "data", type: "object", description: "Response payload" },
+      { name: "error", type: "string", description: "Error message if success is false" }
+    ]}
+  />
+</Preview>
+
+### Configuration Examples
+
+Document configuration objects:
+
+<Preview title="Database Configuration">
+  <TypeTree open
+    name="database"
+    type="object"
+    required={true}
+    properties={[
+      { name: "host", type: "string", required: true },
+      { name: "port", type: "number", defaultValue: "5432" },
+      {
+        name: "ssl",
+        type: "object",
+        properties: [
+          { name: "enabled", type: "boolean", defaultValue: "false" },
+          { name: "cert", type: "string" }
+        ]
+      }
+    ]}
+  />
+</Preview>
+
+## Integration with MDX
+
+The Preview component works seamlessly in Mintlify MDX files:
+
+```mdx
+---
+title: My Component
+description: Component documentation
+---
+
+import { Preview } from "/snippets/tsdocs/Preview.jsx"
+import { MyComponent } from "/snippets/MyComponent.jsx"
+
+## Example
+
+<Preview title="Basic Example">
+  <MyComponent prop="value" />
+</Preview>
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Descriptive Titles" icon="heading">
+    Help readers understand what they're looking at:
+
+    ```jsx
+    // ✅ Clear and descriptive
+    <Preview title="Required vs Optional Fields">
+      <TypeTree open ... />
+    </Preview>
+
+    // ❌ Too generic
+    <Preview title="Example">
+      <TypeTree open ... />
+    </Preview>
+    ```
+  </Accordion>
+
+  <Accordion title="Pair with Code Blocks" icon="code">
+    Show the code alongside the preview:
+
+    ```jsx
+    Here's how to use the component:
+
+    ```jsx
+    <MyComponent prop="value" />
+    ```
+
+    <Preview title="Result">
+      <MyComponent prop="value" />
+    </Preview>
+    ```
+  </Accordion>
+
+  <Accordion title="Keep Content Readable" icon="eye">
+    Don't overcrowd the preview area:
+
+    ```jsx
+    // ✅ Focused example
+    <Preview title="Single Property">
+      <TypeTree open name="id" type="string" required />
+    </Preview>
+
+    // ❌ Too much content
+    <Preview title="Everything">
+      <div>50 lines of complex content...</div>
+    </Preview>
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Components
+
+<CardGroup cols={3}>
+  <Card title="TypeTree" icon="diagram-project" href="/components/type-tree">
+    Display type structures
+  </Card>
+  <Card title="RefLink" icon="link" href="/components/reflink">
+    API reference links
+  </Card>
+  <Card title="PageLink" icon="link" href="/components/pagelink">
+    Documentation page links
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Component not found" icon="triangle-exclamation">
+    If you see `Cannot find module "/snippets/tsdocs/Preview.jsx"`:
+
+    1. Ensure the component exists in your `docs/snippets/tsdocs/` folder
+    2. Run `mint-tsdocs` to auto-copy the component
+    3. Check that the import path is correct
+  </Accordion>
+
+  <Accordion title="Styling looks wrong" icon="paintbrush">
+    The Preview component relies on Tailwind CSS classes:
+
+    1. Ensure Tailwind is configured in your Mintlify project
+    2. Check that dark mode is properly set up
+    3. Verify the `scrollbar-*` utility classes are available
+  </Accordion>
+</AccordionGroup>

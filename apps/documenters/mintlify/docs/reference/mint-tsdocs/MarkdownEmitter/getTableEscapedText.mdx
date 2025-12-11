@@ -1,0 +1,36 @@
+---
+title: "getTableEscapedText"
+icon: "function"
+description: "Escapes text for safe output in markdown table cells"
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# getTableEscapedText
+
+## Summary
+
+Escapes text for safe output in markdown table cells  
+## Signature
+
+```typescript
+protected getTableEscapedText(text: string): string;
+```
+
+## Parameters
+
+### text
+**Type**:`string`
+
+Raw text to escape
+
+## Returns
+
+**Type**:`string`
+
+Escapes text for safe output in markdown table cells
+
+## Remarks
+
+  Table cells require different escaping than regular markdown: - **Pipe (`|`)** - Would break table column structure, escaped as `&#124;` - **Quote (`"`)** - Escaped as `&quot;` for attribute safety - **HTML entities** - `&`, `<`, `>` escaped for safe rendering  Note: We don&#39;t escape markdown syntax (`*`, `_`, etc.) in tables because most markdown parsers support inline formatting within table cells.

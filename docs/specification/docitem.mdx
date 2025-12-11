@@ -1,0 +1,442 @@
+---
+title: DocItem Specification
+sidebarTitle: DocItem
+description: The fundamental unit of OpenDocs documentation
+---
+
+## Overview
+
+The **DocItem** is the fundamental unit of documentation in OpenDocs. **Everything is a DocItem** - from entire modules down to individual method parameters. This unified approach works across all programming languages while preserving language-specific characteristics.
+
+## Core Concept
+
+A module? DocItem.
+A class? DocItem.
+A method? DocItem.
+A parameter? DocItem.
+
+This consistent abstraction provides:
+- **Simple mental model** - One concept to understand
+- **Easy traversal** - Recursive tree structure
+- **Universal** - Works for any programming language
+
+## Schema
+
+import { TypeTree } from "/snippets/tsdocs/TypeTree.jsx"
+
+export const docItemType = {
+  name: "DocItem",
+  type: "object",
+  description: "Universal documentation element",
+  required: true,
+  properties: [
+    {
+      name: "id",
+      type: "string",
+      description: "Language-native fully qualified name",
+      required: true
+    },
+    {
+      name: "name",
+      type: "string",
+      description: "Human-readable name",
+      required: true
+    },
+    {
+      name: "kind",
+      type: "string",
+      description: "Language-specific item type",
+      required: true
+    },
+    {
+      name: "language",
+      type: "string",
+      description: "Source language",
+      required: true
+    },
+    {
+      name: "location",
+      type: "Location",
+      description: "Source code location",
+      properties: [
+        {
+          name: "path",
+          type: "string",
+          description: "File path relative to project root",
+          required: true
+        },
+        {
+          name: "number",
+          type: "number",
+          description: "Line number (1-indexed)",
+          required: true
+        },
+        {
+          name: "column",
+          type: "number",
+          description: "Column number (1-indexed)"
+        }
+      ]
+    },
+    {
+      name: "parentId",
+      type: "string",
+      description: "ID of the parent DocItem"
+    },
+    {
+      name: "docBlock",
+      type: "DocBlock",
+      description: "Documentation content"
+    },
+    {
+      name: "relations",
+      type: "Relations",
+      description: "Semantic relationships",
+      properties: [
+        {
+          name: "<relationship-kind>",
+          type: "string | Relation | Relation[]",
+          description: "DocItem ID, Relation object, or array"
+        }
+      ]
+    },
+    {
+      name: "metadata",
+      type: "object",
+      description: "Language-specific metadata"
+    },
+    {
+      name: "children",
+      type: "DocItem[]",
+      description: "Child items"
+    }
+  ]
+};
+
+<TypeTree open {...docItemType} />
+
+## Fields
+
+### id  <Badge color="surface-destructive">required</Badge>
+
+<Badge color="gray"> string </Badge>
+<span class="px-2 py-0.5 rounded-md bg-red-100/50 dark:bg-red-400/10 text-red-600 dark:text-red-300 font-medium whitespace-nowrap"> required </span>
+
+<ResponseField
+        name="id"
+        type="string"
+        required
+      >
+  Language-native fully qualified name using each language's natural naming convention.
+
+  **Type**: `string`
+
+  | Language | Format | Example |
+  |----------|--------|---------|
+  | TypeScript/JavaScript | `package#export` or `package#Class#member` | `my-lib#Calculator#add` |
+  | Rust | `crate::module::Type` | `serde::de::Deserialize` |
+  | Go | `package.Type` or `package.Function` | `fmt.Printf` |
+  | Python | `module.Class.method` | `mylib.Calculator.add` |
+  | Java | `package.Class.method` | `com.example.Calculator.add` |
+</ResponseField>
+
+### name (required)
+
+Simple name without package/module prefix.
+
+**Type**: `string`
+
+For `mylib.Calculator.add`, the name is `"add"`.
+
+### kind (required)
+
+Language-specific item type. Use descriptive kinds that reflect the language.
+
+**Type**: `string`
+
+**Common values**:
+- `"class"`, `"interface"`, `"method"`, `"function"`, `"property"`, `"parameter"`
+
+**TypeScript**:
+- `"enum"`, `"enumMember"`, `"typeAlias"`, `"constructor"`
+
+**Rust**:
+- `"trait"`, `"impl"`, `"struct"`, `"enum-variant"`
+
+**Go**:
+- `"struct"`, `"interface"`, `"receiver-method"`
+
+**Python**:
+- `"class"`, `"function"`, `"method"`, `"module"`
+
+### language (required)
+
+Programming language of this item. Usually matches the Project language.
+
+**Type**: `string`
+
+**Example**: `"typescript"`, `"python"`, `"go"`, `"rust"`
+
+### location (optional, recommended)
+
+Source code location for "Go to Definition" functionality.
+
+**Type**: `Location`
+
+**Fields**:
+- **path** (required): File path relative to project root (e.g., `"src/calculator.ts"`)
+- **number** (required): Line number where item is defined (1-indexed)
+- **column** (optional): Column number (1-indexed)
+
+**Example**:
+```json
+{
+  "location": {
+    "path": "src/calculator.ts",
+    "number": 10,
+    "column": 1
+  }
+}
+```
+
+### parentId (optional, recommended)
+
+ID of the parent DocItem. Enables upward navigation in the hierarchy without traversing the tree.
+
+**Type**: `string`
+
+**Recommended for**: All nested items
+**Required when**: Using `$ref` for external file references
+
+**Example**:
+```json
+{
+  "id": "my-lib#Calculator#add",
+  "parentId": "my-lib#Calculator"
+}
+```
+
+### docBlock (optional)
+
+Documentation content. See [DocBlock specification](/specification/docblock).
+
+**Type**: `DocBlock`
+
+**Example**:
+```json
+{
+  "docBlock": {
+    "content": "Adds two numbers",
+    "tags": {
+      "param": [
+        { "name": "param", "content": "First number", "parameters": { "name": "a" } }
+      ],
+      "returns": ["The sum"]
+    }
+  }
+}
+```
+
+### relations (optional)
+
+Map of semantic relationships to other DocItems. See [Relations specification](/specification/relations).
+
+**Type**: `Relations`
+
+**Common relationship kinds**:
+- `extends` - Class inheritance or interface extension
+- `implements` - Interface implementation
+
+**Note**: Parent-child containment is expressed via `parentId` and `children`, not as a relation.
+
+**Example**:
+```json
+{
+  "relations": {
+    "extends": "my-lib#BaseClass",
+    "implements": ["my-lib#IInterface1", "my-lib#IInterface2"]
+  }
+}
+```
+
+### metadata (optional)
+
+Language-specific metadata.
+
+**Type**: `object`
+
+**Common fields**:
+- `visibility`: `"public"`, `"private"`, `"protected"`, `"internal"`
+- `signature`: Function/method signature with parameters and return type
+- `isStatic`, `isReadonly`, `isAbstract`: Boolean flags
+- `type`: Type information for properties/variables
+- Language-specific: `associatedTypes` (Rust), `receiver` (Go), `decorators` (Python)
+
+**Example**:
+```json
+{
+  "metadata": {
+    "visibility": "public",
+    "isStatic": false,
+    "signature": {
+      "parameters": [
+        { "name": "a", "type": { "name": "number" } },
+        { "name": "b", "type": { "name": "number" } }
+      ],
+      "returnType": { "name": "number" }
+    }
+  }
+}
+```
+
+### children (optional)
+
+Child DocItems nested within this item.
+
+**Type**: `DocItem[]`
+
+**Examples**:
+- Class contains methods, properties, constructors
+- Module contains classes, functions, types
+- Interface contains method signatures, properties
+- Enum contains enum members
+
+**Example**:
+```json
+{
+  "id": "my-lib#Calculator",
+  "kind": "class",
+  "children": [
+    {
+      "id": "my-lib#Calculator#add",
+      "kind": "method",
+      "parentId": "my-lib#Calculator"
+    }
+  ]
+}
+```
+
+## Complete Example
+
+```json
+{
+  "id": "my-package#Calculator",
+  "name": "Calculator",
+  "kind": "class",
+  "language": "typescript",
+  "location": {
+    "path": "src/calculator.ts",
+    "number": 10,
+    "column": 1
+  },
+  "parentId": "my-package#utils",
+  "docBlock": {
+    "content": "Performs arithmetic calculations",
+    "tags": { "since": ["1.0.0"] }
+  },
+  "relations": {
+    "implements": ["my-package#ICalculator"]
+  },
+  "metadata": {
+    "visibility": "public",
+    "isAbstract": false
+  },
+  "children": [
+    {
+      "id": "my-package#Calculator#add",
+      "name": "add",
+      "kind": "method",
+      "language": "typescript",
+      "location": { "path": "src/calculator.ts", "number": 15, "column": 3 },
+      "parentId": "my-package#Calculator",
+      "docBlock": {
+        "content": "Adds two numbers",
+        "tags": {
+          "param": [
+            { "name": "param", "content": "First number", "parameters": { "name": "a" } },
+            { "name": "param", "content": "Second number", "parameters": { "name": "b" } }
+          ],
+          "returns": ["The sum"]
+        }
+      },
+      "metadata": {
+        "visibility": "public",
+        "isStatic": false,
+        "signature": {
+          "parameters": [
+            { "name": "a", "type": { "name": "number" } },
+            { "name": "b", "type": { "name": "number" } }
+          ],
+          "returnType": { "name": "number" }
+        }
+      }
+    }
+  ]
+}
+```
+
+## Best Practices
+
+### Always Include Source Locations
+
+Enable "Go to Definition" and source linking:
+
+```json
+{
+  "location": {
+    "path": "src/calculator.ts",
+    "number": 10
+  }
+}
+```
+
+### Use Language-Native IDs
+
+Follow each language's naming conventions:
+
+✅ TypeScript: `"my-lib#Calculator#add"`
+✅ Python: `"mylib.Calculator.add"`
+✅ Rust: `"my_crate::Calculator::add"`
+
+### Include parentId for Nested Items
+
+Recommended for all nested items, required when using `$ref`:
+
+```json
+{
+  "id": "my-lib#Calculator#add",
+  "parentId": "my-lib#Calculator"
+}
+```
+
+### Use Descriptive Kinds
+
+Language-specific kinds are clearer than generic ones:
+
+✅ Good: `"rust-trait"`, `"go-receiver-method"`
+❌ Avoid: `"type"`, `"thing"`
+
+### Preserve Language-Specific Metadata
+
+Use the `metadata` field for language features:
+
+```json
+{
+  "metadata": {
+    "visibility": "public",
+    "decorators": ["@Component"],
+    "receiver": "(*MyType)"
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="DocBlock" icon="file-lines" href="/specification/docblock">
+    Learn about documentation content
+  </Card>
+  <Card title="Relations" icon="diagram-project" href="/specification/relations">
+    Understand relationships between DocItems
+  </Card>
+</CardGroup>

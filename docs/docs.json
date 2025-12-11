@@ -1,0 +1,113 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "docs",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Introduction",
+            "pages": [
+              "introduction/overview",
+              "introduction/ecosystem",
+              "introduction/design-principles"
+            ]
+          },
+          {
+            "group": "Specification",
+            "pages": [
+              "specification/overview",
+              "specification/docset",
+              "specification/project",
+              "specification/docitem",
+              "specification/docblock",
+              "specification/relations",
+              "specification/file-organization",
+              "specification/json-schema"
+            ]
+          },
+          {
+            "group": "Building with OpenDocs",
+            "pages": [
+              "building/overview",
+              {
+                "group": "Documenters",
+                "pages": [
+                  "building/documenters/overview",
+                  "building/documenters/consuming",
+                  "building/documenters/rendering",
+                  "building/documenters/examples"
+                ]
+              },
+              {
+                "group": "Extractors",
+                "pages": [
+                  "building/extractors/overview",
+                  "building/extractors/implementation",
+                  "building/extractors/validation"
+                ]
+              },
+              {
+                "group": "UI Components",
+                "pages": [
+                  "building/ui-components/overview",
+                  "building/ui-components/examples"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Developer Tools",
+            "pages": [
+              "tools/cursor",
+              "tools/claude-code",
+              "tools/windsurf"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:hi@opendocs.dev"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "GitHub",
+      "href": "https://github.com/opendocs"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/opendocs"
+    }
+  }
+}

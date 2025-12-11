@@ -1,0 +1,41 @@
+---
+title: "writeLinkTagWithUrlDestination"
+icon: "function"
+description: "Writes a link tag that references an external URL"
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# writeLinkTagWithUrlDestination
+
+## Summary
+
+Writes a link tag that references an external URL  
+## Signature
+
+```typescript
+protected writeLinkTagWithUrlDestination(docLinkTag: DocLinkTag, context: IMarkdownEmitterContext): void;
+```
+
+## Parameters
+
+### docLinkTag
+**Type**:`DocLinkTag`
+
+The link tag node with a URL destination
+
+### context
+**Type**:<RefLink target="mint-tsdocs.IMarkdownEmitterContext">`IMarkdownEmitterContext`</RefLink>
+
+Emission context
+
+## Returns
+
+**Type**:`void`
+
+Writes a link tag that references an external URL
+
+## Remarks
+
+  Handles external URL links like `\{@link https://example.com\}` or `\{@link https://example.com | Link Text\}`.  The link text is normalized (whitespace collapsed) and escaped for safe markdown output. The URL is used as-is.  Output format: `[Link Text](URL)`  Subclasses can override this to customize URL link rendering.

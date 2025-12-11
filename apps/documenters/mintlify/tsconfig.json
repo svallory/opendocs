@@ -1,0 +1,46 @@
+{
+  "compilerOptions": {
+    "target": "ES2018",
+    "module": "CommonJS",
+    "lib": [
+      "ES2018"
+    ],
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "downlevelIteration": true,
+    "checkJs": true,
+    "jsx": "preserve",
+    "paths": {
+      "/snippets/*": [
+        "./docs/snippets/*"
+      ]
+    }
+  },
+  "mdx": {
+    "checkMdx": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "docs",
+    "lib",
+    "node_modules",
+    "snippets",
+    "**/*.test.ts"
+  ]
+}

@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opendocs-extractor-python"
+version = "0.2.0"
+description = "OpenDocs extractor for Python projects"
+readme = "README.md"
+authors = [
+    { name = "Saulo Vallory", email = "your.email@example.com" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.8"
+keywords = ["opendocs", "documentation", "python", "extractor", "ast"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "click>=8.0.0",
+    "docstring-parser>=0.15",
+    "opendocs-model",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-snapshot>=0.9.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+opendocs-extract-py = "opendocs_extractor.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/svallory/opendocs"
+Repository = "https://github.com/svallory/opendocs"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["opendocs_extractor*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

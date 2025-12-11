@@ -1,0 +1,36 @@
+---
+title: "getEscapedText"
+icon: "function"
+description: "Escapes text for safe markdown output"
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# getEscapedText
+
+## Summary
+
+Escapes text for safe markdown output  
+## Signature
+
+```typescript
+protected getEscapedText(text: string): string;
+```
+
+## Parameters
+
+### text
+**Type**:`string`
+
+Raw text to escape
+
+## Returns
+
+**Type**:`string`
+
+Escapes text for safe markdown output
+
+## Remarks
+
+  The escaping order is critical: 1. **Backslashes first** - Prevents double-escaping (e.g., `\*` becoming `\\*`) 2. **Markdown syntax** - Escapes `*`, `#`, `[`, `]`, `_`, `|`,  ` ``, `~` 3. **Triple hyphens** - Prevents horizontal rules (`---`) 4. **HTML entities** - Escapes `&amp;`, ``, ` for safe HTML rendering  This ensures that literal text like `*bold*` appears as-is instead of rendering as markdown formatting.

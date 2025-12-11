@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.options.json",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src",
+    "emitDeclarationOnly": false
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    {
+      "path": "../../../libs/model/typescript/tsconfig.lib.json"
+    }
+  ]
+}

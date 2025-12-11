@@ -1,0 +1,51 @@
+---
+title: "MarkdownDocumenter class"
+icon: "box"
+description: "Core class for rendering API documentation in Mintlify-compatible MDX format. This class takes TypeScript API model data and converts it into MDX files with proper Mintlify frontmatter, navigation integration, and formatting suitable for documentation sites. The process involves multiple stages including and ."
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# MarkdownDocumenter
+
+## Summary
+
+Core class for rendering API documentation in Mintlify-compatible MDX format.  This class takes TypeScript API model data and converts it into MDX files with proper Mintlify frontmatter, navigation integration, and formatting suitable for documentation sites. The process involves multiple stages including data conversion and template rendering.  
+## Signature
+
+```typescript
+export declare class MarkdownDocumenter 
+```
+
+## Constructors
+
+### constructor
+
+Constructs a new instance of the class
+
+## Properties
+
+*No properties defined.*
+
+## Methods
+
+### generateFiles
+
+
+
+### generateNavigation
+
+
+
+## Events
+
+*No events defined.*
+
+## Remarks
+
+  The main workflow involves: 1. Loading the API model from `.api.json` files 2. Converting API items to template data using [object Object] 3. Rendering templates via [object Object] 4. Updating the Mintlify navigation structure  For detailed architecture information, see the  documentation and the .  
+
+## Related Documentation
+- <PageLink target="/architecture/generation-layer">Generation workflow details</PageLink>
+- <PageLink target="/architecture/overview">System architecture overview</PageLink>

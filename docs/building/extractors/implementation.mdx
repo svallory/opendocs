@@ -1,0 +1,720 @@
+---
+title: Implementation Guide
+sidebarTitle: Implementation
+description: Step-by-step guide to building an extractor
+---
+
+## Overview
+
+This guide walks through building a complete OpenDocs extractor for a programming language. We'll use TypeScript as an example, but the patterns apply to any language.
+
+## Project Structure
+
+```
+opendocs-extractor-ts/
+├── src/
+│   ├── cli.ts              # Command-line interface
+│   ├── extractor.ts        # Main extraction logic
+│   ├── parser.ts           # AST parsing
+│   ├── transformers/       # AST → DocItem transformers
+│   │   ├── class.ts
+│   │   ├── function.ts
+│   │   ├── interface.ts
+│   │   └── index.ts
+│   ├── docblock.ts         # Documentation comment parsing
+│   └── utils.ts            # Helper functions
+├── tests/
+│   ├── fixtures/           # Test files
+│   └── extractor.test.ts   # Tests
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+## Step 1: Set Up the CLI
+
+Create the command-line interface:
+
+```typescript
+// src/cli.ts
+import { Command } from 'commander';
+import { extract } from './extractor';
+import { version } from '../package.json';
+
+const program = new Command();
+
+program
+  .name('opendocs-extract-ts')
+  .description('Extract OpenDocs documentation from TypeScript')
+  .version(version)
+  .requiredOption('-i, --input <path>', 'Input directory or file')
+  .option('-o, --output <path>', 'Output file', 'opendocs.json')
+  .option('--project-name <name>', 'Project name')
+  .option('--project-version <version>', 'Project version', '1.0.0')
+  .option('--tsconfig <path>', 'Path to tsconfig.json')
+  .option('--verbose', 'Verbose output')
+  .action(async (options) => {
+    try {
+      const docSet = await extract(options);
+      console.log(`✓ Extracted ${docSet.projects.length} project(s)`);
+      console.log(`✓ Output: ${options.output}`);
+    } catch (error) {
+      console.error('Error:', error.message);
+      process.exit(1);
+    }
+  });
+
+program.parse();
+```
+
+## Step 2: Create the Parser
+
+Set up AST parsing with the TypeScript Compiler API:
+
+```typescript
+// src/parser.ts
+import ts from 'typescript';
+import fs from 'fs';
+import path from 'path';
+import glob from 'glob';
+
+export interface ParserOptions {
+  input: string;
+  tsconfig?: string;
+}
+
+export class Parser {
+  private program: ts.Program;
+  private typeChecker: ts.TypeChecker;
+
+  constructor(options: ParserOptions) {
+    const files = this.findFiles(options.input);
+    const compilerOptions = this.loadCompilerOptions(options.tsconfig);
+
+    this.program = ts.createProgram(files, compilerOptions);
+    this.typeChecker = this.program.getTypeChecker();
+  }
+
+  private findFiles(input: string): string[] {
+    if (fs.statSync(input).isFile()) {
+      return [path.resolve(input)];
+    }
+
+    // Find all .ts files in directory
+    return glob.sync('**/*.ts', {
+      cwd: input,
+      absolute: true,
+      ignore: ['**/node_modules/**', '**/*.d.ts'],
+    });
+  }
+
+  private loadCompilerOptions(tsconfigPath?: string): ts.CompilerOptions {
+    if (tsconfigPath && fs.existsSync(tsconfigPath)) {
+      const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
+      const parsedConfig = ts.parseJsonConfigFileContent(
+        configFile.config,
+        ts.sys,
+        path.dirname(tsconfigPath)
+      );
+      return parsedConfig.options;
+    }
+
+    // Default options
+    return {
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.ESNext,
+      strict: true,
+    };
+  }
+
+  getSourceFiles(): ts.SourceFile[] {
+    return this.program
+      .getSourceFiles()
+      .filter(sf => !sf.isDeclarationFile && !sf.fileName.includes('node_modules'));
+  }
+
+  getTypeChecker(): ts.TypeChecker {
+    return this.typeChecker;
+  }
+}
+```
+
+## Step 3: Extract Documentation Comments
+
+Parse JSDoc comments into DocBlocks:
+
+```typescript
+// src/docblock.ts
+import ts from 'typescript';
+import { DocBlock, DocTag } from '@opendocs/model';
+
+export function extractDocBlock(node: ts.Node): DocBlock | undefined {
+  const jsDocTags = ts.getJSDocTags(node);
+  const jsDocComments = ts.getJSDocCommentsAndTags(node);
+
+  if (jsDocComments.length === 0) {
+    return undefined;
+  }
+
+  // Extract main description
+  const content = extractDescription(node);
+
+  // Extract tags
+  const tags: Record<string, DocTag[]> = {};
+
+  for (const tag of jsDocTags) {
+    const tagName = tag.tagName.text;
+    const tagValue = extractTagValue(tag);
+
+    if (!tags[tagName]) {
+      tags[tagName] = [];
+    }
+
+    tags[tagName].push({
+      name: tagName,
+      content: tagValue,
+      parameters: extractTagParameters(tag),
+    });
+  }
+
+  return {
+    content,
+    tags,
+  };
+}
+
+function extractDescription(node: ts.Node): string {
+  const jsDoc = ts.getJSDocCommentsAndTags(node)[0];
+  if (!jsDoc || !ts.isJSDoc(jsDoc)) {
+    return '';
+  }
+
+  return jsDoc.comment?.toString() || '';
+}
+
+function extractTagValue(tag: ts.JSDocTag): string {
+  if (ts.isJSDocParameterTag(tag)) {
+    return tag.comment?.toString() || '';
+  }
+
+  if (ts.isJSDocReturnTag(tag)) {
+    return tag.comment?.toString() || '';
+  }
+
+  return tag.comment?.toString() || '';
+}
+
+function extractTagParameters(tag: ts.JSDocTag): Record<string, any> | undefined {
+  if (ts.isJSDocParameterTag(tag)) {
+    return {
+      name: tag.name?.getText() || '',
+    };
+  }
+
+  return undefined;
+}
+```
+
+## Step 4: Build Transformers
+
+Create transformers for each type of code element:
+
+```typescript
+// src/transformers/class.ts
+import ts from 'typescript';
+import { DocItem } from '@opendocs/model';
+import { extractDocBlock } from '../docblock';
+import { getLocation, buildId } from '../utils';
+import { extractMethod } from './method';
+import { extractProperty } from './property';
+
+export function extractClass(
+  node: ts.ClassDeclaration,
+  typeChecker: ts.TypeChecker
+): DocItem {
+  const name = node.name?.text || 'Anonymous';
+  const id = buildId(name);
+
+  // Extract children
+  const children: DocItem[] = [];
+  for (const member of node.members) {
+    if (ts.isMethodDeclaration(member)) {
+      children.push(extractMethod(member, typeChecker, id));
+    } else if (ts.isPropertyDeclaration(member)) {
+      children.push(extractProperty(member, typeChecker, id));
+    } else if (ts.isConstructorDeclaration(member)) {
+      children.push(extractConstructor(member, typeChecker, id));
+    }
+  }
+
+  // Extract heritage (extends/implements)
+  const relations: any = {};
+  if (node.heritageClauses) {
+    for (const clause of node.heritageClauses) {
+      if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+        relations.extends = clause.types.map(t => t.expression.getText());
+      } else if (clause.token === ts.SyntaxKind.ImplementsKeyword) {
+        relations.implements = clause.types.map(t => t.expression.getText());
+      }
+    }
+  }
+
+  return {
+    id,
+    name,
+    kind: 'class',
+    language: 'typescript',
+    location: getLocation(node),
+    docBlock: extractDocBlock(node),
+    children,
+    relations: Object.keys(relations).length > 0 ? relations : undefined,
+    metadata: {
+      visibility: getVisibility(node),
+      isAbstract: hasModifier(node, ts.SyntaxKind.AbstractKeyword),
+      isExported: hasModifier(node, ts.SyntaxKind.ExportKeyword),
+    },
+  };
+}
+
+function getVisibility(node: ts.ClassDeclaration): string {
+  if (hasModifier(node, ts.SyntaxKind.PrivateKeyword)) return 'private';
+  if (hasModifier(node, ts.SyntaxKind.ProtectedKeyword)) return 'protected';
+  return 'public';
+}
+
+function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
+  return node.modifiers?.some(m => m.kind === kind) || false;
+}
+```
+
+```typescript
+// src/transformers/function.ts
+import ts from 'typescript';
+import { DocItem } from '@opendocs/model';
+import { extractDocBlock } from '../docblock';
+import { getLocation, buildId } from '../utils';
+
+export function extractFunction(
+  node: ts.FunctionDeclaration,
+  typeChecker: ts.TypeChecker
+): DocItem {
+  const name = node.name?.text || 'Anonymous';
+  const id = buildId(name);
+
+  // Extract signature
+  const signature = typeChecker.getSignatureFromDeclaration(node);
+  const metadata: any = {
+    visibility: 'public',
+    isAsync: hasModifier(node, ts.SyntaxKind.AsyncKeyword),
+  };
+
+  if (signature) {
+    metadata.signature = {
+      parameters: signature.parameters.map(param => ({
+        name: param.name,
+        type: {
+          name: typeChecker.typeToString(typeChecker.getTypeOfSymbol(param)),
+        },
+      })),
+      returnType: {
+        name: typeChecker.typeToString(signature.getReturnType()),
+      },
+    };
+  }
+
+  return {
+    id,
+    name,
+    kind: 'function',
+    language: 'typescript',
+    location: getLocation(node),
+    docBlock: extractDocBlock(node),
+    metadata,
+  };
+}
+```
+
+## Step 5: Implement the Main Extractor
+
+Tie everything together:
+
+```typescript
+// src/extractor.ts
+import { DocSet, Project, DocItem } from '@opendocs/model';
+import { Parser } from './parser';
+import { extractClass } from './transformers/class';
+import { extractFunction } from './transformers/function';
+import { extractInterface } from './transformers/interface';
+import fs from 'fs/promises';
+import ts from 'typescript';
+
+export interface ExtractOptions {
+  input: string;
+  output: string;
+  projectName?: string;
+  projectVersion?: string;
+  tsconfig?: string;
+  verbose?: boolean;
+}
+
+export async function extract(options: ExtractOptions): Promise<DocSet> {
+  const parser = new Parser({
+    input: options.input,
+    tsconfig: options.tsconfig,
+  });
+
+  const typeChecker = parser.getTypeChecker();
+  const sourceFiles = parser.getSourceFiles();
+
+  // Extract items from all source files
+  const items: DocItem[] = [];
+
+  for (const sourceFile of sourceFiles) {
+    if (options.verbose) {
+      console.log(`Processing ${sourceFile.fileName}...`);
+    }
+
+    const fileItems = extractFromSourceFile(sourceFile, typeChecker);
+    items.push(...fileItems);
+  }
+
+  // Build DocSet
+  const docSet: DocSet = {
+    id: options.projectName || 'project',
+    name: options.projectName || 'Project',
+    version: options.projectVersion || '1.0.0',
+    format: 'json',
+    projects: [
+      {
+        id: 'main',
+        name: options.projectName || 'Main',
+        language: 'typescript',
+        version: options.projectVersion || '1.0.0',
+        items,
+      },
+    ],
+  };
+
+  // Write output
+  const json = JSON.stringify(docSet, null, 2);
+  await fs.writeFile(options.output, json, 'utf-8');
+
+  return docSet;
+}
+
+function extractFromSourceFile(
+  sourceFile: ts.SourceFile,
+  typeChecker: ts.TypeChecker
+): DocItem[] {
+  const items: DocItem[] = [];
+
+  function visit(node: ts.Node) {
+    // Only extract exported items
+    if (!hasModifier(node, ts.SyntaxKind.ExportKeyword)) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    if (ts.isClassDeclaration(node)) {
+      items.push(extractClass(node, typeChecker));
+    } else if (ts.isFunctionDeclaration(node)) {
+      items.push(extractFunction(node, typeChecker));
+    } else if (ts.isInterfaceDeclaration(node)) {
+      items.push(extractInterface(node, typeChecker));
+    } else if (ts.isTypeAliasDeclaration(node)) {
+      items.push(extractTypeAlias(node, typeChecker));
+    } else if (ts.isEnumDeclaration(node)) {
+      items.push(extractEnum(node, typeChecker));
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  ts.forEachChild(sourceFile, visit);
+
+  return items;
+}
+
+function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
+  return (
+    ts.canHaveModifiers(node) &&
+    ts.getModifiers(node)?.some(m => m.kind === kind) ||
+    false
+  );
+}
+```
+
+## Step 6: Add Utility Functions
+
+```typescript
+// src/utils.ts
+import ts from 'typescript';
+import path from 'path';
+
+export function getLocation(node: ts.Node): { path: string; number: number; column: number } {
+  const sourceFile = node.getSourceFile();
+  const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+
+  return {
+    path: path.relative(process.cwd(), sourceFile.fileName),
+    number: line + 1, // 1-indexed
+    column: character + 1, // 1-indexed
+  };
+}
+
+export function buildId(...parts: string[]): string {
+  return parts.join('#');
+}
+
+export function getFullyQualifiedName(
+  symbol: ts.Symbol,
+  typeChecker: ts.TypeChecker
+): string {
+  return typeChecker.getFullyQualifiedName(symbol);
+}
+```
+
+## Step 7: Add Tests
+
+Write comprehensive tests:
+
+```typescript
+// tests/extractor.test.ts
+import { describe, it, expect } from 'vitest';
+import { extract } from '../src/extractor';
+import path from 'path';
+
+describe('TypeScript Extractor', () => {
+  it('should extract classes', async () => {
+    const docSet = await extract({
+      input: path.join(__dirname, 'fixtures/class.ts'),
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    });
+
+    const items = docSet.projects[0].items;
+    expect(items).toHaveLength(1);
+    expect(items[0].kind).toBe('class');
+    expect(items[0].name).toBe('MyClass');
+  });
+
+  it('should extract methods from classes', async () => {
+    const docSet = await extract({
+      input: path.join(__dirname, 'fixtures/class-with-methods.ts'),
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    });
+
+    const classItem = docSet.projects[0].items[0];
+    expect(classItem.children).toBeDefined();
+    expect(classItem.children!.length).toBeGreaterThan(0);
+    expect(classItem.children![0].kind).toBe('method');
+  });
+
+  it('should extract documentation comments', async () => {
+    const docSet = await extract({
+      input: path.join(__dirname, 'fixtures/documented.ts'),
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    });
+
+    const item = docSet.projects[0].items[0];
+    expect(item.docBlock).toBeDefined();
+    expect(item.docBlock!.content).toContain('This is a documented class');
+  });
+
+  it('should extract JSDoc tags', async () => {
+    const docSet = await extract({
+      input: path.join(__dirname, 'fixtures/jsdoc-tags.ts'),
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    });
+
+    const item = docSet.projects[0].items[0];
+    expect(item.docBlock?.tags?.param).toBeDefined();
+    expect(item.docBlock?.tags?.returns).toBeDefined();
+  });
+});
+```
+
+## Step 8: Handle Edge Cases
+
+Add robust error handling:
+
+```typescript
+// src/extractor.ts (additions)
+
+class ExtractionError extends Error {
+  constructor(message: string, public filePath: string) {
+    super(`${filePath}: ${message}`);
+  }
+}
+
+function extractWithErrorHandling(
+  sourceFile: ts.SourceFile,
+  typeChecker: ts.TypeChecker,
+  options: ExtractOptions
+): DocItem[] {
+  try {
+    return extractFromSourceFile(sourceFile, typeChecker);
+  } catch (error) {
+    if (options.verbose) {
+      console.warn(`⚠ Error extracting ${sourceFile.fileName}:`, error.message);
+    }
+    return [];
+  }
+}
+```
+
+## Step 9: Optimize for Large Projects
+
+Add performance optimizations:
+
+```typescript
+// src/extractor.ts (additions)
+
+async function extractParallel(
+  sourceFiles: ts.SourceFile[],
+  typeChecker: ts.TypeChecker,
+  options: ExtractOptions
+): Promise<DocItem[]> {
+  const chunks = chunkArray(sourceFiles, 10); // Process 10 files at a time
+  const results: DocItem[][] = [];
+
+  for (const chunk of chunks) {
+    const chunkResults = await Promise.all(
+      chunk.map(sf => Promise.resolve(extractFromSourceFile(sf, typeChecker)))
+    );
+    results.push(...chunkResults);
+  }
+
+  return results.flat();
+}
+
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
+```
+
+## Step 10: Package for Distribution
+
+Create package.json:
+
+```json
+{
+  "name": "opendocs-extractor-typescript",
+  "version": "1.0.0",
+  "description": "OpenDocs extractor for TypeScript",
+  "bin": {
+    "opendocs-extract-ts": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@opendocs/model": "^1.0.0",
+    "commander": "^11.0.0",
+    "glob": "^10.0.0",
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "vitest": "^1.0.0"
+  }
+}
+```
+
+## Complete Example
+
+Here's a complete minimal extractor:
+
+```typescript
+#!/usr/bin/env node
+import ts from 'typescript';
+import fs from 'fs/promises';
+import { DocSet } from '@opendocs/model';
+
+// Simple extractor that extracts exported classes
+async function extractDocs(inputFile: string, outputFile: string) {
+  // Parse
+  const content = await fs.readFile(inputFile, 'utf-8');
+  const sourceFile = ts.createSourceFile(
+    inputFile,
+    content,
+    ts.ScriptTarget.Latest,
+    true
+  );
+
+  // Extract
+  const items: any[] = [];
+  ts.forEachChild(sourceFile, node => {
+    if (ts.isClassDeclaration(node) && node.name) {
+      items.push({
+        id: node.name.text,
+        name: node.name.text,
+        kind: 'class',
+        language: 'typescript',
+        location: {
+          path: inputFile,
+          number: sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1,
+        },
+      });
+    }
+  });
+
+  // Output
+  const docSet: DocSet = {
+    id: 'project',
+    name: 'Project',
+    version: '1.0.0',
+    format: 'json',
+    projects: [{
+      id: 'main',
+      name: 'Main',
+      language: 'typescript',
+      version: '1.0.0',
+      items,
+    }],
+  };
+
+  await fs.writeFile(outputFile, JSON.stringify(docSet, null, 2));
+  console.log(`✓ Extracted ${items.length} items to ${outputFile}`);
+}
+
+// CLI
+const [input, output = 'opendocs.json'] = process.argv.slice(2);
+if (!input) {
+  console.error('Usage: extract <input-file> [output-file]');
+  process.exit(1);
+}
+
+extractDocs(input, output);
+```
+
+Save as `extract.ts`, then run:
+
+```bash
+tsx extract.ts src/index.ts opendocs.json
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Validation" icon="check" href="/building/extractors/validation">
+    Test and validate your extractor
+  </Card>
+  <Card title="Extractor Overview" icon="book" href="/building/extractors/overview">
+    Review architecture patterns
+  </Card>
+</CardGroup>

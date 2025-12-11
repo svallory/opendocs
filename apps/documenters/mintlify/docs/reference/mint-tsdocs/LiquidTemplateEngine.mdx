@@ -1,0 +1,71 @@
+---
+title: "LiquidTemplateEngine class"
+icon: "box"
+description: "LiquidTemplateEngine API documentation"
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# LiquidTemplateEngine
+## Signature
+
+```typescript
+export declare class LiquidTemplateEngine 
+```
+
+## Constructors
+
+### constructor
+
+Constructs a new instance of the class
+
+## Properties
+
+### liquid
+**Modifiers**: readonly
+**Type**:`get liquid(): Liquid;`
+**Default**: ``
+
+Get the Liquid engine for direct access
+
+### templateDir
+**Modifiers**: readonly
+**Type**:`get templateDir(): string;`
+**Default**: ``
+
+Get the template directory (public for template manager)
+
+## Methods
+
+### clearCache
+
+Clear the template cache
+
+### getAvailableTemplates
+
+Get available template names from the template directory
+
+### hasTemplate
+
+Check if a template exists
+
+### postProcessOutput
+
+Post-process template output (public for template manager)
+
+### render
+
+Render a template with the provided data
+
+### validateAllTemplates
+
+Validate all templates in the template directory
+
+### validateTemplate
+
+Validate a template file for syntax errors
+
+## Events
+
+*No events defined.*

@@ -1,0 +1,106 @@
+---
+title: Installation
+description: Install mint-tsdocs in your TypeScript project
+icon: "download"
+---
+
+import { RightArrow } from "/snippets/RightArrow.jsx"
+
+## No Installation Required!
+
+You can use mint-tsdocs without installing it:
+
+```bash
+npx mint-tsdocs
+```
+
+That's it! All dependencies are bundled.
+
+## Optional: Install Locally
+
+Want faster execution or version locking?
+
+<CodeGroup>
+
+```bash npm
+npm install -D mint-tsdocs
+```
+
+```bash bun
+bun add -D mint-tsdocs
+```
+
+```bash yarn
+yarn add -D mint-tsdocs
+```
+
+```bash pnpm
+pnpm add -D mint-tsdocs
+```
+
+</CodeGroup>
+
+### Or Globally
+
+<CodeGroup>
+
+```bash npm
+npm install -g mint-tsdocs
+```
+
+```bash bun
+bun add -g mint-tsdocs
+```
+
+```bash yarn
+yarn add -g mint-tsdocs
+```
+
+```bash pnpm
+pnpm add -g mint-tsdocs
+```
+
+</CodeGroup>
+
+Then run without npx:
+
+```bash
+mint-tsdocs
+```
+
+<AccordionGroup>
+  <Accordion title="Why install locally or globally?" icon="circle-question">
+    **Benefits:**
+    - Faster execution (no download)
+    - Version pinned in package.json
+    - Works offline
+    - Slightly cleaner npm scripts
+
+    **Downsides:**
+    - Adds to node_modules size
+    - Need to update manually
+  </Accordion>
+
+  <Accordion title="Why use npx?" icon="bolt">
+    **Benefits:**
+    - Always latest version
+    - No node_modules bloat
+    - Works in any project instantly
+    - No installation step
+
+    **Downsides:**
+    - First run downloads (cached after)
+    - Requires internet connection
+  </Accordion>
+</AccordionGroup>
+
+## Requirements
+
+- Node.js 18 or higher
+- TypeScript project with `declaration: true` in `tsconfig.json`
+
+## Next Steps
+
+<Card horizontal title="Quick Start" icon="rocket" href="/quickstart">
+  <RightArrow>Generate your first documentation</RightArrow>
+</Card>

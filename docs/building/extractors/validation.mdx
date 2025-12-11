@@ -1,0 +1,298 @@
+---
+title: Validation & Testing
+sidebarTitle: Validation
+description: Ensuring your extractor outputs valid opendocs.json
+---
+
+## Overview
+
+Validation ensures your extractor produces correct, spec-compliant `opendocs.json` files. This guide covers JSON Schema validation, testing strategies, and best practices.
+
+## JSON Schema Validation
+
+### Install Ajv
+
+```bash
+bun add ajv ajv-formats
+```
+
+### Load the OpenDocs Schema
+
+```typescript
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
+import fs from 'fs/promises';
+
+async function validateDocSet(docSet: unknown): Promise<boolean> {
+  const ajv = new Ajv({ allErrors: true });
+  addFormats(ajv);
+
+  // Load schema (download from opendocs.io/schema.json)
+  const schema = JSON.parse(
+    await fs.readFile('./opendocs-schema.json', 'utf-8')
+  );
+
+  const validate = ajv.compile(schema);
+  const valid = validate(docSet);
+
+  if (!valid) {
+    console.error('Validation errors:');
+    for (const error of validate.errors || []) {
+      console.error(`  ${error.instancePath}: ${error.message}`);
+    }
+    return false;
+  }
+
+  return true;
+}
+```
+
+### Integrate into Extractor
+
+```typescript
+// src/extractor.ts
+export async function extract(options: ExtractOptions): Promise<DocSet> {
+  const docSet = await extractDocumentation(options);
+
+  // Validate before writing
+  if (!(await validateDocSet(docSet))) {
+    throw new Error('Generated DocSet is invalid');
+  }
+
+  await fs.writeFile(options.output, JSON.stringify(docSet, null, 2));
+  return docSet;
+}
+```
+
+## Testing with Sandbox Projects
+
+Create test fixtures that cover different scenarios:
+
+```
+tests/
+├── fixtures/
+│   ├── simple-class.ts
+│   ├── inheritance.ts
+│   ├── generic-types.ts
+│   ├── async-functions.ts
+│   └── edge-cases.ts
+└── extractor.test.ts
+```
+
+### Simple Class Test
+
+```typescript
+// tests/fixtures/simple-class.ts
+/** A simple calculator class */
+export class Calculator {
+  /**
+   * Adds two numbers
+   * @param a First number
+   * @param b Second number
+   * @returns The sum
+   */
+  add(a: number, b: number): number {
+    return a + b;
+  }
+}
+```
+
+```typescript
+// tests/extractor.test.ts
+describe('Simple class extraction', () => {
+  it('should extract class with methods', async () => {
+    const docSet = await extract({
+      input: './tests/fixtures/simple-class.ts',
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    });
+
+    expect(docSet.projects[0].items).toHaveLength(1);
+
+    const classItem = docSet.projects[0].items[0];
+    expect(classItem.name).toBe('Calculator');
+    expect(classItem.kind).toBe('class');
+    expect(classItem.docBlock?.content).toContain('simple calculator');
+    expect(classItem.children).toHaveLength(1);
+
+    const method = classItem.children![0];
+    expect(method.name).toBe('add');
+    expect(method.docBlock?.tags?.param).toHaveLength(2);
+    expect(method.docBlock?.tags?.returns).toBeDefined();
+  });
+});
+```
+
+### Inheritance Test
+
+```typescript
+describe('Inheritance extraction', () => {
+  it('should extract extends relations', async () => {
+    const docSet = await extract({
+      input: './tests/fixtures/inheritance.ts',
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    });
+
+    const derivedClass = docSet.projects[0].items.find(
+      item => item.name === 'DerivedClass'
+    );
+
+    expect(derivedClass?.relations?.extends).toBe('BaseClass');
+  });
+
+  it('should extract implements relations', async () => {
+    const docSet = await extract({
+      input: './tests/fixtures/inheritance.ts',
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    });
+
+    const implClass = docSet.projects[0].items.find(
+      item => item.name === 'MyImplementation'
+    );
+
+    expect(implClass?.relations?.implements).toContain('IMyInterface');
+  });
+});
+```
+
+## Common Validation Errors
+
+### Missing Required Fields
+
+```typescript
+test('should include all required fields', () => {
+  const item = extractedItems[0];
+
+  expect(item.id).toBeDefined();
+  expect(item.name).toBeDefined();
+  expect(item.kind).toBeDefined();
+  expect(item.language).toBeDefined();
+});
+```
+
+### Invalid ID Format
+
+```typescript
+test('should use correct ID format', () => {
+  const item = extractedItems[0];
+
+  // TypeScript uses # separator
+  expect(item.id).toMatch(/^[\w-]+#[\w#-]+$/);
+});
+```
+
+### Missing parentId for Children
+
+```typescript
+test('should set parentId on children', () => {
+  const classItem = extractedItems.find(i => i.kind === 'class');
+  const method = classItem?.children?.[0];
+
+  expect(method?.parentId).toBe(classItem?.id);
+});
+```
+
+### Invalid Location
+
+```typescript
+test('should have valid source location', () => {
+  const item = extractedItems[0];
+
+  expect(item.location).toBeDefined();
+  expect(item.location?.path).toBeTruthy();
+  expect(item.location?.number).toBeGreaterThan(0);
+});
+```
+
+## Snapshot Testing
+
+Use snapshot tests to catch unexpected changes:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+
+describe('Snapshot tests', () => {
+  it('should match known good output', async () => {
+    const docSet = await extract({
+      input: './tests/fixtures/simple-class.ts',
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    });
+
+    // First run creates snapshot, subsequent runs compare
+    expect(docSet).toMatchSnapshot();
+  });
+});
+```
+
+## Best Practices
+
+### Always Include Tests
+
+Every transformer should have unit tests:
+
+```typescript
+describe('extractClass', () => {
+  it('should extract class name', () => {
+    const node = createClassNode('MyClass');
+    const item = extractClass(node, typeChecker);
+    expect(item.name).toBe('MyClass');
+  });
+
+  it('should extract abstract modifier', () => {
+    const node = createAbstractClassNode('AbstractClass');
+    const item = extractClass(node, typeChecker);
+    expect(item.metadata?.isAbstract).toBe(true);
+  });
+});
+```
+
+### Test Error Handling
+
+```typescript
+it('should handle invalid syntax gracefully', async () => {
+  await expect(
+    extract({
+      input: './tests/fixtures/invalid-syntax.ts',
+      output: '/dev/null',
+      projectName: 'Test',
+      projectVersion: '1.0.0',
+    })
+  ).rejects.toThrow();
+});
+```
+
+### Validate Against Schema in CI
+
+```yaml
+# .github/workflows/test.yml
+name: Test
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun test
+      - run: bun run extract:test
+      - run: bunx ajv validate -s schema.json -d test-output.json
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Implementation" icon="code" href="/building/extractors/implementation">
+    Return to implementation guide
+  </Card>
+  <Card title="Specification" icon="book" href="/specification/overview">
+    Review the OpenDocs format
+  </Card>
+</CardGroup>

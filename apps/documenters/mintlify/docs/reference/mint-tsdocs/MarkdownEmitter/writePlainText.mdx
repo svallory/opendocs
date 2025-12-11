@@ -1,0 +1,41 @@
+---
+title: "writePlainText"
+icon: "function"
+description: "Writes plain text with context-aware formatting"
+---
+
+import { PageLink } from '/snippets/tsdocs/PageLink.jsx';
+import { RefLink } from '/snippets/tsdocs/RefLink.jsx';
+
+# writePlainText
+
+## Summary
+
+Writes plain text with context-aware formatting  
+## Signature
+
+```typescript
+protected writePlainText(text: string, context: IMarkdownEmitterContext): void;
+```
+
+## Parameters
+
+### text
+**Type**:`string`
+
+The text to write
+
+### context
+**Type**:<RefLink target="mint-tsdocs.IMarkdownEmitterContext">`IMarkdownEmitterContext`</RefLink>
+
+Emission context (includes bold/italic state)
+
+## Returns
+
+**Type**:`void`
+
+Writes plain text with context-aware formatting
+
+## Remarks
+
+  This method handles the complex logic of inserting markdown formatting markers (bold `**`, italic `_`) while avoiding ambiguous sequences.  **Processing steps:** 1. Split text into [leading whitespace, content, trailing whitespace] 2. Write leading whitespace as-is 3. Check if a separator is needed before formatting markers 4. Apply bold/italic markers if requested 5. Write escaped content 6. Close bold/italic markers 7. Write trailing whitespace as-is  **Separator logic:** When transitioning between formatted spans (e.g., `**bold***italic*`), we need a zero-width separator to prevent parser ambiguity. The separator is inserted unless the previous character is safe (empty, newline, space, `[`, or `>`).

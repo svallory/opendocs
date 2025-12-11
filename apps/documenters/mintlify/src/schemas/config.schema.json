@@ -1,0 +1,274 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "mint-tsdocs Configuration",
+  "description": "Unified configuration for mint-tsdocs documentation generator.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "Part of the JSON Schema standard, this optional keyword declares the URL of the schema that the file conforms to. Editors may download the schema and use it to perform syntax highlighting.",
+      "type": "string"
+    },
+    "entryPoint": {
+      "description": "Path to the main TypeScript declaration file (.d.ts) to document. If not specified, will auto-detect from package.json 'types'/'typings' field or common paths.",
+      "type": "string"
+    },
+    "outputFolder": {
+      "description": "Directory where MDX documentation files will be generated. Defaults to './docs/reference'.",
+      "type": "string"
+    },
+    "docsJson": {
+      "description": "Path to Mintlify's docs.json file for navigation integration. If not specified, will search for docs.json in common locations.",
+      "type": "string"
+    },
+    "tabName": {
+      "description": "Name of the tab in Mintlify navigation where API docs will appear. Defaults to 'API Reference'.",
+      "type": "string",
+      "default": "API Reference"
+    },
+    "groupName": {
+      "description": "Name of the group within the tab for organizing API documentation pages. Defaults to 'API'.",
+      "type": "string",
+      "default": "API"
+    },
+    "convertReadme": {
+      "description": "Whether to convert README.md to index.mdx. Defaults to false.",
+      "type": "boolean",
+      "default": false
+    },
+    "readmeTitle": {
+      "description": "Title for the converted README file. Defaults to 'README'.",
+      "type": "string",
+      "default": "README"
+    },
+    "templates": {
+      "description": "Template customization options.",
+      "type": "object",
+      "properties": {
+        "userTemplateDir": {
+          "description": "Directory containing custom template overrides.",
+          "type": "string"
+        },
+        "cache": {
+          "description": "Whether to enable template caching. Defaults to true.",
+          "type": "boolean",
+          "default": true
+        },
+        "strict": {
+          "description": "Whether to use strict mode for templates. Defaults to true.",
+          "type": "boolean",
+          "default": true
+        },
+        "rendering": {
+          "description": "Configuration for controlling how API items are rendered.",
+          "type": "object",
+          "properties": {
+            "hideStringEnumValues": {
+              "description": "Whether to hide the value column in string enum member tables. For string enums, the value is usually the same as the member name. Defaults to true.",
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    "apiExtractor": {
+      "description": "API Extractor configuration. Will be written to .tsdocs/api-extractor.json. See https://api-extractor.com/pages/configs/api-extractor_json/",
+      "type": "object",
+      "properties": {
+        "configPath": {
+          "description": "Path to custom api-extractor.json file. If specified, will use this instead of generating one.",
+          "type": "string"
+        },
+        "bundledPackages": {
+          "description": "NPM packages to treat as part of this package.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [ ]
+        },
+        "compiler": {
+          "description": "TypeScript compiler options.",
+          "type": "object",
+          "properties": {
+            "tsconfigFilePath": {
+              "description": "Path to tsconfig.json file.",
+              "type": "string"
+            },
+            "skipLibCheck": {
+              "description": "Whether to skip type checking of declaration files.",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "apiReport": {
+          "description": "API report (.api.md) generation settings.",
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "description": "Whether to generate API report files.",
+              "type": "boolean",
+              "default": false
+            },
+            "reportFileName": {
+              "description": "Name of the API report file. Defaults to '<unscopedPackageName>.api.md'.",
+              "type": "string"
+            },
+            "reportFolder": {
+              "description": "Folder where the API report file will be written. Defaults to '<projectFolder>/temp/'.",
+              "type": "string"
+            },
+            "reportTempFolder": {
+              "description": "Temporary folder for API report generation. Defaults to '<projectFolder>/temp/'.",
+              "type": "string"
+            }
+          }
+        },
+        "docModel": {
+          "description": "Doc model (.api.json) generation settings.",
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "projectFolderUrl": {
+              "description": "Base URL for source code links (e.g., 'https://github.com/user/repo/tree/main').",
+              "type": "string"
+            }
+          }
+        },
+        "dtsRollup": {
+          "description": "TypeScript declaration rollup settings.",
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "description": "Whether to generate rolled-up .d.ts files.",
+              "type": "boolean",
+              "default": false
+            },
+            "untrimmedFilePath": {
+              "description": "Path for the untrimmed .d.ts rollup file (includes all declarations).",
+              "type": "string"
+            },
+            "alphaTrimmedFilePath": {
+              "description": "Path for the alpha-trimmed .d.ts rollup file (includes @public, @beta, and @alpha).",
+              "type": "string"
+            },
+            "betaTrimmedFilePath": {
+              "description": "Path for the beta-trimmed .d.ts rollup file (includes @public and @beta).",
+              "type": "string"
+            },
+            "publicTrimmedFilePath": {
+              "description": "Path for the public-trimmed .d.ts rollup file (includes only @public).",
+              "type": "string"
+            }
+          }
+        },
+        "messages": {
+          "description": "Message reporting configuration. Controls how different types of diagnostic messages are handled.",
+          "type": "object",
+          "properties": {
+            "compilerMessageReporting": {
+              "description": "Configuration for TypeScript compiler messages (e.g., { \"TS2551\": { \"logLevel\": \"warning\" } }).",
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "logLevel": {
+                    "description": "How to report this message type: 'error' (fails build), 'warning' (doesn't fail), or 'none' (suppress).",
+                    "type": "string",
+                    "enum": ["error", "warning", "none"]
+                  },
+                  "addToApiReportFile": {
+                    "description": "Whether to include this message in the API report file.",
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            },
+            "extractorMessageReporting": {
+              "description": "Configuration for API Extractor messages (e.g., { \"ae-missing-release-tag\": { \"logLevel\": \"none\" } }).",
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "logLevel": {
+                    "description": "How to report this message type: 'error' (fails build), 'warning' (doesn't fail), or 'none' (suppress).",
+                    "type": "string",
+                    "enum": ["error", "warning", "none"]
+                  },
+                  "addToApiReportFile": {
+                    "description": "Whether to include this message in the API report file.",
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            },
+            "tsdocMessageReporting": {
+              "description": "Configuration for TSDoc parser messages (e.g., { \"tsdoc-param-tag-missing-hyphen\": { \"logLevel\": \"warning\" } }).",
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "logLevel": {
+                    "description": "How to report this message type: 'error' (fails build), 'warning' (doesn't fail), or 'none' (suppress).",
+                    "type": "string",
+                    "enum": ["error", "warning", "none"]
+                  },
+                  "addToApiReportFile": {
+                    "description": "Whether to include this message in the API report file.",
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "lint": {
+      "description": "Linting configuration for the lint command.",
+      "type": "object",
+      "properties": {
+        "eslint": {
+          "description": "ESLint integration settings.",
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "description": "Enable ESLint linting with tsdoc plugin. Defaults to true.",
+              "type": "boolean",
+              "default": true
+            },
+            "directories": {
+              "description": "Directories to lint (ESLint discovers files automatically). Defaults to ['src'].",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": ["src"],
+              "examples": [["src"], ["src", "lib"]]
+            },
+            "configPath": {
+              "description": "Path to custom ESLint configuration file. Auto-discovered by default.",
+              "type": "string",
+              "examples": [".eslintrc.js", "config/eslint.config.js"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "failOnError": {
+          "description": "Fail the command (exit code 1) when errors are found. Defaults to true.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
